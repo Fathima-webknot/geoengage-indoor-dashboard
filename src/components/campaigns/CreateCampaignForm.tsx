@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
   TextField,
   Button,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  OutlinedInput,
-  Chip,
   Typography,
   Alert,
   Stack,
-  SelectChangeEvent,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { CampaignType, CreateCampaignRequest } from '@/types/campaign.types';
@@ -31,19 +27,9 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const [formData, setFormData] = useState<CreateCampaignRequest>({
-    name: '',
-    description: '',
-    type: CampaignType.PROMOTIONAL,
-    contentTitle: '',
-    contentMessage: '',
-    contentImageUrl: '',
-    contentActionUrl: '',
-    contentActionText: '',
-    zoneIds: [],
-    startDate: '',
-    endDate: '',
-  });
+  const [campaignName, setCampaignName] = useState('');
+  const [selectedZone, setSelectedZone] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
 
   // Load zones on component mount
   useEffect(() => {
@@ -58,23 +44,6 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     loadZones();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (e: SelectChangeEvent) => {
-    setFormData((prev) => ({ ...prev, type: e.target.value as CampaignType }));
-  };
-
-  const handleZoneChange = (e: SelectChangeEvent<string[]>) => {
-    const value = e.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      zoneIds: typeof value === 'string' ? value.split(',') : value,
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -82,32 +51,23 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     setSuccess(false);
 
     try {
-      // Remove empty optional fields
       const payload: CreateCampaignRequest = {
-        ...formData,
-        contentImageUrl: formData.contentImageUrl || undefined,
-        contentActionUrl: formData.contentActionUrl || undefined,
-        contentActionText: formData.contentActionText || undefined,
-        endDate: formData.endDate || undefined,
+        name: campaignName,
+        description: notificationMessage,
+        type: CampaignType.PROMOTIONAL,
+        contentTitle: campaignName,
+        contentMessage: notificationMessage,
+        zoneIds: [selectedZone],
+        startDate: new Date().toISOString(),
       };
 
       await campaignService.createCampaign(payload);
       setSuccess(true);
       
       // Reset form
-      setFormData({
-        name: '',
-        description: '',
-        type: CampaignType.PROMOTIONAL,
-        contentTitle: '',
-        contentMessage: '',
-        contentImageUrl: '',
-        contentActionUrl: '',
-        contentActionText: '',
-        zoneIds: [],
-        startDate: '',
-        endDate: '',
-      });
+      setCampaignName('');
+      setSelectedZone('');
+      setNotificationMessage('');
 
       if (onSuccess) {
         onSuccess();
@@ -120,7 +80,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   };
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
+    <Box sx={{ p: 3, mb: 4, bgcolor: 'background.paper', borderRadius: 1 }}>
       <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
         Create New Campaign
       </Typography>
@@ -138,155 +98,45 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
       )}
 
       <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
+        <Stack spacing={2}>
+          {/* Campaign Name and Target Zone */}
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <TextField
               required
               fullWidth
               label="Campaign Name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="e.g., Holiday Sale 2026"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+              placeholder="e.g., Summer Sale"
             />
 
             <FormControl fullWidth required>
-              <InputLabel>Campaign Type</InputLabel>
+              <InputLabel>Target Zone</InputLabel>
               <Select
-                value={formData.type}
-                onChange={handleSelectChange}
-                label="Campaign Type"
+                value={selectedZone}
+                onChange={(e) => setSelectedZone(e.target.value)}
+                label="Target Zone"
               >
-                <MenuItem value={CampaignType.PROMOTIONAL}>Promotional</MenuItem>
-                <MenuItem value={CampaignType.INFORMATIONAL}>Informational</MenuItem>
-                <MenuItem value={CampaignType.NAVIGATIONAL}>Navigational</MenuItem>
-                <MenuItem value={CampaignType.EMERGENCY}>Emergency</MenuItem>
+                {zones.map((zone) => (
+                  <MenuItem key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>
 
+          {/* Notification Message */}
           <TextField
             required
             fullWidth
             multiline
-            rows={2}
-            label="Description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder="Brief description of the campaign"
+            rows={4}
+            label="Notification Message"
+            value={notificationMessage}
+            onChange={(e) => setNotificationMessage(e.target.value)}
+            placeholder="Enter the push notification text..."
           />
-
-          {/* Content */}
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Campaign Content
-          </Typography>
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              required
-              fullWidth
-              label="Content Title"
-              name="contentTitle"
-              value={formData.contentTitle}
-              onChange={handleInputChange}
-              placeholder="e.g., 50% Off All Items"
-            />
-
-            <TextField
-              fullWidth
-              label="Content Image URL"
-              name="contentImageUrl"
-              value={formData.contentImageUrl}
-              onChange={handleInputChange}
-              placeholder="https://example.com/image.jpg"
-            />
-          </Stack>
-
-          <TextField
-            required
-            fullWidth
-            multiline
-            rows={3}
-            label="Content Message"
-            name="contentMessage"
-            value={formData.contentMessage}
-            onChange={handleInputChange}
-            placeholder="Detailed message for the notification"
-          />
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Action URL"
-              name="contentActionUrl"
-              value={formData.contentActionUrl}
-              onChange={handleInputChange}
-              placeholder="https://example.com/offer"
-            />
-
-            <TextField
-              fullWidth
-              label="Action Button Text"
-              name="contentActionText"
-              value={formData.contentActionText}
-              onChange={handleInputChange}
-              placeholder="e.g., Shop Now"
-            />
-          </Stack>
-
-          {/* Zones and Schedule */}
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Target Zones & Schedule
-          </Typography>
-
-          <FormControl fullWidth required>
-            <InputLabel>Target Zones</InputLabel>
-            <Select
-              multiple
-              value={formData.zoneIds}
-              onChange={handleZoneChange}
-              input={<OutlinedInput label="Target Zones" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((zoneId) => {
-                    const zone = zones.find((z) => z.id === zoneId);
-                    return <Chip key={zoneId} label={zone?.name || zoneId} size="small" />;
-                  })}
-                </Box>
-              )}
-            >
-              {zones.map((zone) => (
-                <MenuItem key={zone.id} value={zone.id}>
-                  {zone.name} ({zone.type})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              required
-              fullWidth
-              type="datetime-local"
-              label="Start Date"
-              name="startDate"
-              value={formData.startDate}
-              onChange={handleInputChange}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            <TextField
-              fullWidth
-              type="datetime-local"
-              label="End Date (Optional)"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleInputChange}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Stack>
 
           {/* Submit Button */}
           <Box>
@@ -296,13 +146,12 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
               size="large"
               startIcon={<AddIcon />}
               disabled={loading}
-              sx={{ minWidth: 200 }}
             >
               {loading ? 'Creating...' : 'Create Campaign'}
             </Button>
           </Box>
         </Stack>
       </Box>
-    </Paper>
+    </Box>
   );
 };
