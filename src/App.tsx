@@ -3,6 +3,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme';
 import { ProtectedRoute } from '@/components/routes/ProtectedRoute';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import HomePage from '@/pages/HomePage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
@@ -17,31 +18,18 @@ function App() {
           {/* Public route - Home/Login page */}
           <Route path="/" element={<HomePage />} />
 
-          {/* Protected routes - Require authentication */}
+          {/* Protected routes with AdminLayout */}
           <Route
-            path="/campaigns"
             element={
               <ProtectedRoute>
-                <CampaignsPage />
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <AnalyticsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/campaigns" element={<CampaignsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
 
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
