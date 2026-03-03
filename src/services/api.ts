@@ -5,7 +5,11 @@ import { auth } from '../config/firebase';
  * Base API URL from environment variables
  * Default to localhost if not configured
  */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// Remove trailing slash if present
+if (API_BASE_URL.endsWith('/')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
 
 /**
  * Create Axios instance with default configuration
@@ -15,6 +19,7 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': '69420', // Skip ngrok browser warning
   },
 });
 
@@ -31,11 +36,25 @@ apiClient.interceptors.request.use(
       if (currentUser) {
         // Get the ID token from Firebase
         const token = await currentUser.getIdToken();
+        
+        // Log token in a persistent way
+        console.group('🔑 FIREBASE TOKEN - Click to expand and copy');
+        console.warn('FULL TOKEN (copy this):', token);
+        console.log('User Email:', currentUser.email);
+        console.log('User UID:', currentUser.uid);
+        console.groupEnd();
+        
+        // Also store in window for easy access
+        (window as any).FIREBASE_TOKEN = token;
+        console.info('💡 TIP: Type "FIREBASE_TOKEN" in console to see token again');
 
         // Attach the token to the Authorization header
         if (config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
+          config.headers['ngrok-skip-browser-warning'] = '69420';
         }
+      } else {
+        console.warn('⚠️ No authenticated user found');
       }
     } catch (error) {
       console.error('Error getting Firebase token:', error);
