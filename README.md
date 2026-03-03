@@ -82,6 +82,54 @@ Web-based admin panel for managing indoor location-based campaigns, analytics tr
 
 ---
 
+### **Firebase Setup**
+
+This project uses Firebase Authentication for Google Sign-In. Follow these steps to configure Firebase:
+
+1. **Create a Firebase Project:**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Click "Add project" and follow the setup wizard
+   - Enable Google Analytics (optional)
+
+2. **Enable Google Sign-In:**
+   - In Firebase Console, go to **Authentication** → **Sign-in method**
+   - Click on **Google** provider
+   - Click **Enable** toggle
+   - Add your support email
+   - Click **Save**
+
+3. **Get Firebase Configuration:**
+   - Go to **Project Settings** (gear icon)
+   - Scroll down to "Your apps" section
+   - Click on **Web** icon (`</>`)
+   - Register your app with a nickname (e.g., "GeoEngage Admin")
+   - Copy the Firebase configuration object
+
+4. **Add Configuration to `.env`:**
+   - Copy the values from Firebase config to your `.env` file
+   - Match the variable names in `.env.example`
+
+5. **Configure Authorized Domains:**
+   - In Firebase Console, go to **Authentication** → **Settings** → **Authorized domains**
+   - Add `localhost` (already added by default)
+   - Add your production domain when deploying
+
+**Example Firebase Config Object:**
+```javascript
+const firebaseConfig = {
+  apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef123456"
+};
+```
+
+**Security Note:** Never commit your `.env` file to version control. The `.env` file is already in `.gitignore`.
+
+---
+
 ## 📁 **Project Structure**
 
 ```
