@@ -12,7 +12,7 @@ import {
   Stack,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { CampaignType, CreateCampaignRequest } from '@/types/campaign.types';
+import { CampaignType } from '@/types/campaign.types';
 import { Zone } from '@/types/zone.types';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
@@ -24,6 +24,7 @@ interface CreateCampaignFormProps {
 export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSuccess }) => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(false);
+  const [zonesLoading, setZonesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -35,10 +36,32 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   useEffect(() => {
     const loadZones = async () => {
       try {
+        setZonesLoading(true);
+        console.log('Fetching zones from API...');
         const response = await zoneService.getAllZones();
-        setZones(response.zones);
-      } catch (err) {
-        console.error('Failed to load zones:', err);
+        console.log('Zones API response:', response);
+        
+        // Handle different response formats
+        let zonesData: Zone[] = [];
+        if (Array.isArray(response)) {
+          // Backend returns array directly
+          zonesData = response;
+        } else if (response && Array.isArray(response.zones)) {
+          // Backend returns { zones: [...] }
+          zonesData = response.zones;
+        } else if (response && Array.isArray((response as any).data)) {
+          // Backend returns { data: [...] }
+          zonesData = (response as any).data;
+        }
+        
+        console.log('Parsed zones array:', zonesData);
+        setZones(zonesData);
+      } catch (err: any) {
+        console.error('Failed to load zones - Full error:', err);
+        console.error('Error response:', err.response);
+        setError(`Failed to load zones: ${err.response?.status || ''} ${err.response?.data?.message || err.message}`);
+      } finally {
+        setZonesLoading(false);
       }
     };
     loadZones();
@@ -51,29 +74,47 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     setSuccess(false);
 
     try {
-      const payload: CreateCampaignRequest = {
+      // Backend expects snake_case field names
+      const payload: any = {
         name: campaignName,
-        description: notificationMessage,
+        zone_id: selectedZone, // Backend expects singular zone_id, not zoneIds array
+        message: notificationMessage, // Backend expects 'message', not 'contentMessage'
         type: CampaignType.PROMOTIONAL,
-        contentTitle: campaignName,
-        contentMessage: notificationMessage,
-        zoneIds: [selectedZone],
-        startDate: new Date().toISOString(),
       };
+
+      console.group('📤 Creating Campaign');
+      console.log('Payload:', payload);
+      console.groupEnd();
 
       await campaignService.createCampaign(payload);
       setSuccess(true);
       
-      // Reset form
-      setCampaignName('');
-      setSelectedZone('');
-      setNotificationMessage('');
-
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Reset form after a delay to show success message
+      setTimeout(() => {
+        setCampaignName('');
+        setSelectedZone('');
+        setNotificationMessage('');
+        setSuccess(false);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 2000); // Show success message for 2 seconds
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create campaign');
+      console.group('❌ Campaign Creation Error');
+      console.error('Full error:', err);
+      console.error('Response data:', err.response?.data);
+      console.error('Response status:', err.response?.status);
+      console.groupEnd();
+      
+      // Extract detailed error message
+      const errorMsg = err.response?.data?.message 
+        || err.response?.data?.error
+        || (typeof err.response?.data === 'string' ? err.response?.data : null)
+        || err.message 
+        || 'Failed to create campaign';
+      
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -116,12 +157,19 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                 value={selectedZone}
                 onChange={(e) => setSelectedZone(e.target.value)}
                 label="Target Zone"
+                disabled={zonesLoading}
               >
-                {zones.map((zone) => (
-                  <MenuItem key={zone.id} value={zone.id}>
-                    {zone.name}
-                  </MenuItem>
-                ))}
+                {zonesLoading ? (
+                  <MenuItem disabled>Loading zones...</MenuItem>
+                ) : zones.length === 0 ? (
+                  <MenuItem disabled>No zones available</MenuItem>
+                ) : (
+                  zones.map((zone) => (
+                    <MenuItem key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
           </Stack>

@@ -9,76 +9,46 @@ import {
   TableRow,
   Chip,
   Typography,
-  Box,
   IconButton,
   Tooltip,
   CircularProgress,
+  Box,
 } from '@mui/material';
 import {
-  PlayArrow as ActivateIcon,
-  Pause as PauseIcon,
-  Delete as DeleteIcon,
+  PowerSettingsNew as ActivateIcon,
+  Block as DeactivateIcon,
 } from '@mui/icons-material';
-import { Campaign, CampaignStatus, CampaignType } from '@/types/campaign.types';
 
 interface CampaignListProps {
-  campaigns: Campaign[];
+  campaigns: any[]; // Backend returns snake_case fields
   loading?: boolean;
+  actionLoading?: string | null; // ID of campaign currently being updated
   onActivate?: (id: string) => void;
   onDeactivate?: (id: string) => void;
-  onDelete?: (id: string) => void;
 }
-
-const getStatusColor = (status: CampaignStatus): 'default' | 'success' | 'warning' | 'error' => {
-  switch (status) {
-    case CampaignStatus.ACTIVE:
-      return 'success';
-    case CampaignStatus.PAUSED:
-      return 'warning';
-    case CampaignStatus.DRAFT:
-      return 'default';
-    case CampaignStatus.COMPLETED:
-      return 'error';
-    default:
-      return 'default';
-  }
-};
-
-const getTypeLabel = (type: CampaignType): string => {
-  switch (type) {
-    case CampaignType.PROMOTIONAL:
-      return 'Promotional';
-    case CampaignType.INFORMATIONAL:
-      return 'Informational';
-    case CampaignType.NAVIGATIONAL:
-      return 'Navigational';
-    case CampaignType.EMERGENCY:
-      return 'Emergency';
-    default:
-      return type;
-  }
-};
 
 export const CampaignList: React.FC<CampaignListProps> = ({
   campaigns,
   loading = false,
+  actionLoading = null,
   onActivate,
   onDeactivate,
-  onDelete,
 }) => {
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+  // Debug: Log first campaign to see backend structure
+  React.useEffect(() => {
+    if (campaigns.length > 0) {
+      console.group('📋 Backend Campaign Structure');
+      console.log('First campaign:', campaigns[0]);
+      console.log('Available fields:', Object.keys(campaigns[0]));
+      console.log('Name field value:', campaigns[0].name);
+      console.log('All name-like fields:', {
+        name: campaigns[0].name,
+        campaign_name: campaigns[0].campaign_name,
+        title: campaigns[0].title,
       });
-    } catch {
-      return dateString;
+      console.groupEnd();
     }
-  };
+  }, [campaigns]);
 
   if (loading) {
     return (
@@ -90,120 +60,130 @@ export const CampaignList: React.FC<CampaignListProps> = ({
 
   if (campaigns.length === 0) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="body1" color="text.secondary">
-          No campaigns found. Create your first campaign above!
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="body1" color="text.secondary" align="center">
+          No campaigns yet. Create your first campaign above!
         </Typography>
       </Paper>
     );
   }
 
   return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableCell sx={{ fontWeight: 600 }}>Campaign Name</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Start Date</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>End Date</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Zones</TableCell>
-            <TableCell sx={{ fontWeight: 600 }} align="center">
-              Metrics
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600 }} align="center">
-              Actions
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {campaigns.map((campaign) => (
-            <TableRow
-              key={campaign.id}
-              sx={{
-                '&:hover': { backgroundColor: '#fafafa' },
-              }}
-            >
-              <TableCell>
-                <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {campaign.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {campaign.description}
-                  </Typography>
-                </Box>
+    <Box>
+      <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+        Active & Past Campaigns
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead sx={{ bgcolor: '#f5f5f5' }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                Status
               </TableCell>
-              <TableCell>
-                <Chip label={getTypeLabel(campaign.type)} size="small" variant="outlined" />
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                Campaign
               </TableCell>
-              <TableCell>
-                <Chip
-                  label={campaign.status.toUpperCase()}
-                  size="small"
-                  color={getStatusColor(campaign.status)}
-                />
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                Zone
               </TableCell>
-              <TableCell>
-                <Typography variant="body2">{formatDate(campaign.startDate)}</Typography>
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                Message
               </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {campaign.endDate ? formatDate(campaign.endDate) : 'No end date'}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip label={`${campaign.zoneIds.length} zones`} size="small" />
-              </TableCell>
-              <TableCell align="center">
-                <Box>
-                  <Typography variant="caption" display="block">
-                    👁️ {campaign.impressions}
-                  </Typography>
-                  <Typography variant="caption" display="block">
-                    🖱️ {campaign.clicks}
-                  </Typography>
-                </Box>
-              </TableCell>
-              <TableCell align="center">
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                  {campaign.isActive ? (
-                    <Tooltip title="Pause Campaign">
-                      <IconButton
-                        size="small"
-                        color="warning"
-                        onClick={() => onDeactivate?.(campaign.id)}
-                      >
-                        <PauseIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title="Activate Campaign">
-                      <IconButton
-                        size="small"
-                        color="success"
-                        onClick={() => onActivate?.(campaign.id)}
-                      >
-                        <ActivateIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  <Tooltip title="Delete Campaign">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => onDelete?.(campaign.id)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }} align="right">
+                Actions
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {campaigns.map((campaign) => {
+              // Backend returns: id, zone_id, message, active, created_at
+              const isActive = campaign.active || false;
+              const status = isActive ? 'Active' : 'Inactive';
+              
+              return (
+                <TableRow
+                  key={campaign.id}
+                  sx={{
+                    '&:hover': { backgroundColor: '#fafafa' },
+                  }}
+                >
+                  <TableCell>
+                    <Chip
+                      label={status}
+                      size="small"
+                      color={isActive ? 'success' : 'default'}
+                      sx={{ 
+                        minWidth: 70,
+                        bgcolor: isActive ? '#e8f5e9' : '#f5f5f5',
+                        color: isActive ? '#2e7d32' : '#757575',
+                        fontWeight: 500,
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      Campaign #{campaign.id}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {campaign.zone_id ? campaign.zone_id.substring(0, 8) + '...' : 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {campaign.message || 'No message'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                      {isActive ? (
+                        <Tooltip title="Deactivate Campaign">
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => onDeactivate && onDeactivate(campaign.id)}
+                              disabled={actionLoading === campaign.id}
+                              sx={{ 
+                                color: actionLoading === campaign.id ? '#ccc' : '#f57c00',
+                              }}
+                            >
+                              {actionLoading === campaign.id ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <DeactivateIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Activate Campaign">
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => onActivate && onActivate(campaign.id)}
+                              disabled={actionLoading === campaign.id}
+                              sx={{ 
+                                color: actionLoading === campaign.id ? '#ccc' : '#4caf50',
+                              }}
+                            >
+                              {actionLoading === campaign.id ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <ActivateIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 };

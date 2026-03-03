@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Snackbar, Alert } from '@mui/material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
 import { Campaign } from '@/types/campaign.types';
@@ -12,14 +12,34 @@ import { campaignService } from '@/services/campaignService';
 const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'info' });
 
   const loadCampaigns = async () => {
     setLoading(true);
     try {
       const response = await campaignService.getAllCampaigns();
-      setCampaigns(response.campaigns);
-    } catch (error) {
+      console.log('Campaigns API response:', response);
+      
+      // Handle different response formats
+      let campaignsData: Campaign[] = [];
+      if (Array.isArray(response)) {
+        campaignsData = response;
+      } else if (response && Array.isArray(response.campaigns)) {
+        campaignsData = response.campaigns;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        campaignsData = response.data;
+      }
+      
+      console.log('Parsed campaigns array:', campaignsData);
+      setCampaigns(campaignsData);
+    } catch (error: any) {
       console.error('Failed to load campaigns:', error);
+      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -35,32 +55,51 @@ const CampaignsPage = () => {
   };
 
   const handleActivate = async (id: string) => {
+    setActionLoading(id);
     try {
-      await campaignService.activateCampaign(id);
+      await campaignService.updateCampaign(id, { active: true });
+      setSnackbar({
+        open: true,
+        message: 'Campaign activated successfully!',
+        severity: 'success',
+      });
       loadCampaigns();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to activate campaign:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to activate campaign',
+        severity: 'error',
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleDeactivate = async (id: string) => {
+    setActionLoading(id);
     try {
-      await campaignService.deactivateCampaign(id);
+      await campaignService.updateCampaign(id, { active: false });
+      setSnackbar({
+        open: true,
+        message: 'Campaign deactivated successfully!',
+        severity: 'success',
+      });
       loadCampaigns();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to deactivate campaign:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to deactivate campaign',
+        severity: 'error',
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this campaign?')) {
-      try {
-        await campaignService.deleteCampaign(id);
-        loadCampaigns();
-      } catch (error) {
-        console.error('Failed to delete campaign:', error);
-      }
-    }
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
@@ -74,10 +113,25 @@ const CampaignsPage = () => {
       <CampaignList
         campaigns={campaigns}
         loading={loading}
+        actionLoading={actionLoading}
         onActivate={handleActivate}
         onDeactivate={handleDeactivate}
-        onDelete={handleDelete}
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
