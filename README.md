@@ -130,6 +130,60 @@ const firebaseConfig = {
 
 ---
 
+### **API Service Configuration**
+
+This project uses **Axios** with custom interceptors for HTTP requests to the backend API.
+
+**Features:**
+- ✅ **Automatic Token Injection:** Request interceptor attaches Firebase ID token to all API calls
+- ✅ **Error Handling:** Response interceptor handles 401, 403, 404, and 500 errors gracefully
+- ✅ **Base URL Configuration:** Set via `VITE_API_BASE_URL` environment variable
+- ✅ **30-second Timeout:** Prevents hanging requests
+- ✅ **TypeScript Support:** Fully typed API service methods
+
+**How It Works:**
+
+1. **Request Interceptor:**
+   - Automatically gets Firebase ID token from `auth.currentUser`
+   - Attaches token to `Authorization: Bearer <token>` header
+   - No manual token management needed in components
+
+2. **Response Interceptor:**
+   - **401 Unauthorized:** Logs authentication errors (can be extended to redirect to login)
+   - **403 Forbidden:** Logs permission errors
+   - **404 Not Found:** Logs missing resource errors
+   - **500 Server Error:** Logs server errors
+   - **Network Errors:** Handles no-response scenarios
+
+**Usage Example:**
+
+```typescript
+import { apiService } from '@/services/api';
+
+// GET request
+const campaigns = await apiService.get('/campaigns');
+
+// POST request
+const newCampaign = await apiService.post('/campaigns', {
+  title: 'Summer Sale',
+  message: 'Get 50% off!',
+  zoneIds: [1, 2, 3]
+});
+
+// PUT request
+await apiService.put(`/campaigns/${id}`, { isActive: true });
+
+// DELETE request
+await apiService.delete(`/campaigns/${id}`);
+```
+
+**Configuration:**
+- **Base URL:** Defaults to `http://localhost:3000/api` if `VITE_API_BASE_URL` is not set
+- **Timeout:** 30 seconds (configurable in `src/services/api.ts`)
+- **Headers:** JSON content type by default
+
+---
+
 ## 📁 **Project Structure**
 
 ```
@@ -192,6 +246,11 @@ The app uses **Firebase Google Sign-In** for authentication. Only users with `ad
 ## 🌐 **Backend API Integration**
 
 The admin dashboard connects to the GeoEngage backend API. Ensure the backend is running and accessible.
+
+**API Service:** All HTTP requests use the configured Axios service (`src/services/api.ts`) which automatically:
+- Attaches Firebase authentication token to requests
+- Handles common errors (401, 403, 404, 500)
+- Uses base URL from `VITE_API_BASE_URL` environment variable
 
 **Key Endpoints:**
 - `POST /api/v1/campaigns` - Create campaign

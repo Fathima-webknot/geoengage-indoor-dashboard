@@ -8,6 +8,7 @@ import theme from './theme/theme'
 
 function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<'loading' | 'configured' | 'missing'>('loading')
+  const [apiStatus, setApiStatus] = useState<'loading' | 'configured' | 'missing'>('loading')
 
   useEffect(() => {
     // Check if Firebase environment variables are configured
@@ -28,7 +29,14 @@ function App() {
       setFirebaseStatus(allConfigured ? 'configured' : 'missing')
     }
 
+    // Check if API base URL is configured
+    const checkApiConfig = () => {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL
+      setApiStatus(apiUrl ? 'configured' : 'missing')
+    }
+
     checkFirebaseConfig()
+    checkApiConfig()
   }, [])
 
   return (
@@ -90,6 +98,12 @@ function App() {
                 color="success"
                 sx={{ fontSize: '0.95rem', py: 2.5 }}
               />
+              <Chip
+                icon={<CheckCircleIcon />}
+                label="Commit 4: Axios API Service with Interceptors"
+                color="primary"
+                sx={{ fontSize: '0.95rem', py: 2.5 }}
+              />
             </Stack>
 
             {firebaseStatus === 'missing' && (
@@ -116,12 +130,35 @@ function App() {
               </Alert>
             )}
 
+            {apiStatus === 'missing' && (
+              <Alert 
+                severity="info" 
+                sx={{ mt: 2, textAlign: 'left' }}
+              >
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  API Base URL Not Configured
+                </Typography>
+                <Typography variant="body2">
+                  Add <code>VITE_API_BASE_URL</code> to your <code>.env</code> file.
+                  Defaults to http://localhost:3000/api if not set.
+                </Typography>
+              </Alert>
+            )}
+
+            {apiStatus === 'configured' && (
+              <Alert severity="success" sx={{ mt: 2, textAlign: 'left' }}>
+                <Typography variant="body2">
+                  ✅ API base URL configured: {import.meta.env.VITE_API_BASE_URL}
+                </Typography>
+              </Alert>
+            )}
+
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mt: 4, fontStyle: 'italic' }}
             >
-              Phase 1 (Commits 1-4) in progress...
+              Phase 1 (Project Setup & Configuration) completed! 🎉
             </Typography>
           </Paper>
         </Container>
