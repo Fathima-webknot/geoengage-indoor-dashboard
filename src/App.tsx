@@ -1,43 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { Box, Container, Typography, Paper, Chip, Stack, Alert } from '@mui/material'
+import { Box, Container, Typography, Paper, Stack, Alert, Button, Avatar } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import WarningIcon from '@mui/icons-material/Warning'
+import LoginIcon from '@mui/icons-material/Login'
+import LogoutIcon from '@mui/icons-material/Logout'
 import theme from './theme/theme'
+import { useAuth } from '@/contexts/AuthContext'
 
 function App() {
-  const [firebaseStatus, setFirebaseStatus] = useState<'loading' | 'configured' | 'missing'>('loading')
-  const [apiStatus, setApiStatus] = useState<'loading' | 'configured' | 'missing'>('loading')
+  const { currentUser, login, logout } = useAuth()
+  const [authLoading, setAuthLoading] = useState(false)
 
-  useEffect(() => {
-    // Check if Firebase environment variables are configured
-    const checkFirebaseConfig = () => {
-      const requiredVars = [
-        'VITE_FIREBASE_API_KEY',
-        'VITE_FIREBASE_AUTH_DOMAIN',
-        'VITE_FIREBASE_PROJECT_ID',
-        'VITE_FIREBASE_STORAGE_BUCKET',
-        'VITE_FIREBASE_MESSAGING_SENDER_ID',
-        'VITE_FIREBASE_APP_ID',
-      ]
-
-      const allConfigured = requiredVars.every(
-        (varName) => import.meta.env[varName] && import.meta.env[varName] !== 'your-api-key'
-      )
-
-      setFirebaseStatus(allConfigured ? 'configured' : 'missing')
+  const handleLogin = async () => {
+    setAuthLoading(true)
+    try {
+      await login()
+    } catch (error) {
+      console.error('Login failed:', error)
+    } finally {
+      setAuthLoading(false)
     }
+  }
 
-    // Check if API base URL is configured
-    const checkApiConfig = () => {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL
-      setApiStatus(apiUrl ? 'configured' : 'missing')
+  const handleLogout = async () => {
+    setAuthLoading(true)
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setAuthLoading(false)
     }
-
-    checkFirebaseConfig()
-    checkApiConfig()
-  }, [])
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -76,90 +71,81 @@ function App() {
               color="text.secondary"
               sx={{ mt: 2, mb: 4 }}
             >
-              Project initialized successfully! Ready for Phase 1 development.
+              Indoor Location-Based Campaign Management
             </Typography>
 
-            <Stack spacing={2} sx={{ mt: 4 }}>
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="Commit 1: React + Vite + TypeScript Setup"
-                color="success"
-                sx={{ fontSize: '0.95rem', py: 2.5 }}
-              />
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="Commit 2: Material-UI Theme Configured"
-                color="primary"
-                sx={{ fontSize: '0.95rem', py: 2.5 }}
-              />
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="Commit 3: Firebase Authentication Configured"
-                color="success"
-                sx={{ fontSize: '0.95rem', py: 2.5 }}
-              />
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="Commit 4: Axios API Service with Interceptors"
-                color="primary"
-                sx={{ fontSize: '0.95rem', py: 2.5 }}
-              />
-            </Stack>
-
-            {firebaseStatus === 'missing' && (
-              <Alert 
-                severity="warning" 
-                icon={<WarningIcon />}
-                sx={{ mt: 3, textAlign: 'left' }}
-              >
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Firebase Not Configured
-                </Typography>
-                <Typography variant="body2">
-                  Please create a <code>.env</code> file and add your Firebase credentials.
-                  See <code>.env.example</code> and README.md for instructions.
-                </Typography>
-              </Alert>
-            )}
-
-            {firebaseStatus === 'configured' && (
-              <Alert severity="success" sx={{ mt: 3, textAlign: 'left' }}>
-                <Typography variant="body2">
-                  ✅ Firebase configuration detected. Authentication is ready!
-                </Typography>
-              </Alert>
-            )}
-
-            {apiStatus === 'missing' && (
-              <Alert 
-                severity="info" 
-                sx={{ mt: 2, textAlign: 'left' }}
-              >
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  API Base URL Not Configured
-                </Typography>
-                <Typography variant="body2">
-                  Add <code>VITE_API_BASE_URL</code> to your <code>.env</code> file.
-                  Defaults to http://localhost:3000/api if not set.
-                </Typography>
-              </Alert>
-            )}
-
-            {apiStatus === 'configured' && (
-              <Alert severity="success" sx={{ mt: 2, textAlign: 'left' }}>
-                <Typography variant="body2">
-                  ✅ API base URL configured: {import.meta.env.VITE_API_BASE_URL}
-                </Typography>
-              </Alert>
-            )}
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 4, fontStyle: 'italic' }}
+            {/* Auth Testing Section */}
+            <Paper
+              variant="outlined"
+              sx={{
+                mt: 4,
+                p: 3,
+                backgroundColor: 'background.paper',
+                borderColor: 'primary.main',
+                borderWidth: 2,
+              }}
             >
-              Phase 1 (Project Setup & Configuration) completed! 🎉
-            </Typography>
+              <Typography variant="h6" color="primary" gutterBottom>
+                🔐 Authentication
+              </Typography>
+
+              {currentUser ? (
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <Alert severity="success" icon={<CheckCircleIcon />}>
+                    <Typography variant="body2" fontWeight={600}>
+                      User Authenticated
+                    </Typography>
+                  </Alert>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      src={currentUser.photoURL || undefined}
+                      alt={currentUser.displayName || 'User'}
+                      sx={{ width: 56, height: 56 }}
+                    />
+                    <Box>
+                      <Typography variant="body1" fontWeight={600}>
+                        {currentUser.displayName || 'No name'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {currentUser.email || 'No email'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<LogoutIcon />}
+                    onClick={handleLogout}
+                    disabled={authLoading}
+                    fullWidth
+                  >
+                    {authLoading ? 'Logging out...' : 'Sign Out'}
+                  </Button>
+                </Stack>
+              ) : (
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <Alert severity="info">
+                    <Typography variant="body2">
+                      Sign in with your Google account to continue
+                    </Typography>
+                  </Alert>
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<LoginIcon />}
+                    onClick={handleLogin}
+                    disabled={authLoading}
+                    fullWidth
+                    size="large"
+                  >
+                    {authLoading ? 'Signing in...' : 'Sign In with Google'}
+                  </Button>
+                </Stack>
+              )}
+            </Paper>
           </Paper>
         </Container>
       </Box>
