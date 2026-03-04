@@ -13,6 +13,7 @@ import {
   Tooltip,
   CircularProgress,
   Box,
+  Skeleton,
 } from '@mui/material';
 import {
   PowerSettingsNew as ActivateIcon,
@@ -53,23 +54,31 @@ export const CampaignList: React.FC<CampaignListProps> = ({
     }
   }, [campaigns]);
 
-  if (loading) {
-    return (
-      <Paper sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Paper>
-    );
-  }
-
-  if (campaigns.length === 0) {
-    return (
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="body1" color="text.secondary" align="center">
-          No campaigns yet. Create your first campaign above!
-        </Typography>
-      </Paper>
-    );
-  }
+  // Skeleton loader rows
+  const renderSkeletonRows = () => {
+    return Array.from({ length: 3 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell>
+          <Skeleton variant="rounded" width={70} height={24} />
+        </TableCell>
+        <TableCell>
+          <Skeleton variant="text" width="80%" />
+        </TableCell>
+        <TableCell>
+          <Skeleton variant="text" width="60%" />
+        </TableCell>
+        <TableCell>
+          <Skeleton variant="text" width="90%" />
+        </TableCell>
+        <TableCell align="right">
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton variant="circular" width={32} height={32} />
+          </Box>
+        </TableCell>
+      </TableRow>
+    ));
+  };
 
   return (
     <Box>
@@ -98,7 +107,18 @@ export const CampaignList: React.FC<CampaignListProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {campaigns.map((campaign) => {
+            {loading ? (
+              renderSkeletonRows()
+            ) : campaigns.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    No campaigns yet. Create your first campaign above!
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              campaigns.map((campaign) => {
               // Backend returns: id, zone_id, message, active, created_at
               const isActive = campaign.active || false;
               const status = isActive ? 'Active' : 'Inactive';
@@ -197,7 +217,8 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                   </TableCell>
                 </TableRow>
               );
-            })}
+            })
+            )}
           </TableBody>
         </Table>
       </TableContainer>

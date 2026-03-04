@@ -12,6 +12,7 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Skeleton,
 } from '@mui/material';
 import {
   Campaign as CampaignIcon,
@@ -197,14 +198,6 @@ const AnalyticsPage = () => {
     loadMetrics();
   }, []);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
@@ -213,43 +206,71 @@ const AnalyticsPage = () => {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Total Campaigns"
-            value={metrics.totalCampaigns}
-            icon={<CampaignIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
-            color="primary.main"
-            bgColor="background.default"
-          />
+          {loading ? (
+            <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="text" width="80%" height={50} sx={{ mt: 1 }} />
+            </Paper>
+          ) : (
+            <MetricCard
+              title="Total Campaigns"
+              value={metrics.totalCampaigns}
+              icon={<CampaignIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
+              color="primary.main"
+              bgColor="background.default"
+            />
+          )}
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Active Campaigns"
-            value={metrics.activeCampaigns}
-            icon={<ActiveIcon sx={{ fontSize: 32, color: 'success.main' }} />}
-            color="success.main"
-            bgColor="background.default"
-          />
+          {loading ? (
+            <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="text" width="80%" height={50} sx={{ mt: 1 }} />
+            </Paper>
+          ) : (
+            <MetricCard
+              title="Active Campaigns"
+              value={metrics.activeCampaigns}
+              icon={<ActiveIcon sx={{ fontSize: 32, color: 'success.main' }} />}
+              color="success.main"
+              bgColor="background.default"
+            />
+          )}
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Inactive Campaigns"
-            value={metrics.inactiveCampaigns}
-            icon={<InactiveIcon sx={{ fontSize: 32, color: 'warning.main' }} />}
-            color="warning.main"
-            bgColor="background.default"
-          />
+          {loading ? (
+            <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="text" width="80%" height={50} sx={{ mt: 1 }} />
+            </Paper>
+          ) : (
+            <MetricCard
+              title="Inactive Campaigns"
+              value={metrics.inactiveCampaigns}
+              icon={<InactiveIcon sx={{ fontSize: 32, color: 'warning.main' }} />}
+              color="warning.main"
+              bgColor="background.default"
+            />
+          )}
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Total Zones"
-            value={metrics.totalZones}
-            icon={<ZoneIcon sx={{ fontSize: 32, color: 'secondary.main' }} />}
-            color="secondary.main"
-            bgColor="background.default"
-          />
+          {loading ? (
+            <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="text" width="80%" height={50} sx={{ mt: 1 }} />
+            </Paper>
+          ) : (
+            <MetricCard
+              title="Total Zones"
+              value={metrics.totalZones}
+              icon={<ZoneIcon sx={{ fontSize: 32, color: 'secondary.main' }} />}
+              color="secondary.main"
+              bgColor="background.default"
+            />
+          )}
         </Grid>
       </Grid>
 
@@ -358,7 +379,17 @@ const AnalyticsPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {zonePerformance.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                    <TableCell align="center"><Skeleton variant="text" width={40} /></TableCell>
+                    <TableCell align="center"><Skeleton variant="rounded" width={50} height={24} /></TableCell>
+                    <TableCell align="center"><Skeleton variant="rounded" width={50} height={24} /></TableCell>
+                    <TableCell align="right"><Skeleton variant="rounded" width={70} height={24} /></TableCell>
+                  </TableRow>
+                ))
+              ) : zonePerformance.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">

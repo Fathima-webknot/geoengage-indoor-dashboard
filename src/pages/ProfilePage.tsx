@@ -53,6 +53,8 @@ const ProfilePage = () => {
       } catch (error) {
         setSnackbar({ open: true, message: 'Failed to copy UID' });
       }
+    } else {
+      setSnackbar({ open: true, message: 'UID not available' });
     }
   };
 
@@ -112,8 +114,8 @@ const ProfilePage = () => {
           <Grid container spacing={3} alignItems="center">
             <Grid size="auto">
               <Avatar
-                src={currentUser.photoURL || undefined}
-                alt={currentUser.displayName || undefined}
+                src={currentUser?.photoURL ?? undefined}
+                alt={currentUser?.displayName ?? undefined}
                 sx={{ 
                   width: 100, 
                   height: 100, 
@@ -121,25 +123,25 @@ const ProfilePage = () => {
                   borderColor: 'primary.main',
                 }}
               >
-                {!currentUser.photoURL && (
+                {!currentUser?.photoURL && (
                   <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
-                    {currentUser.displayName?.[0] || currentUser.email?.[0]?.toUpperCase()}
+                    {currentUser?.displayName?.[0] ?? currentUser?.email?.[0]?.toUpperCase() ?? 'A'}
                   </Typography>
                 )}
               </Avatar>
             </Grid>
             <Grid size={{ xs: 12 }}>
               <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
-                {currentUser.displayName || 'Admin User'}
+                {currentUser?.displayName ?? 'Admin User'}
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                 <EmailIcon fontSize="small" color="primary" />
                 <Typography variant="body1" color="text.secondary">
-                  {currentUser.email}
+                  {currentUser?.email ?? 'No email'}
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                {currentUser.emailVerified && (
+                {currentUser?.emailVerified && (
                   <Chip
                     icon={<CheckCircleIcon />}
                     label="Email Verified"
@@ -187,7 +189,7 @@ const ProfilePage = () => {
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all', flex: 1 }}>
-                      {currentUser.uid.substring(0, 20)}...
+                      {currentUser?.uid?.substring(0, 20) ?? 'N/A'}...
                     </Typography>
                     <Button
                       size="small"
@@ -206,7 +208,7 @@ const ProfilePage = () => {
                     Sign-in Method
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-                    {firebaseUser.providerData[0]?.providerId === 'google.com' ? 'Google' : 'Email'}
+                    {firebaseUser?.providerData?.[0]?.providerId === 'google.com' ? 'Google' : 'Email'}
                   </Typography>
                 </Box>
 
@@ -215,7 +217,7 @@ const ProfilePage = () => {
                     Account Created
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-                    {formatDate(firebaseUser.metadata.creationTime)}
+                    {formatDate(firebaseUser?.metadata?.creationTime)}
                   </Typography>
                 </Box>
 
@@ -224,7 +226,7 @@ const ProfilePage = () => {
                     Last Sign-in
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-                    {formatDate(firebaseUser.metadata.lastSignInTime)}
+                    {formatDate(firebaseUser?.metadata?.lastSignInTime)}
                   </Typography>
                 </Box>
               </Stack>
