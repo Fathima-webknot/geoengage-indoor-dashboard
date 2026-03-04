@@ -35,3 +35,6 @@ yarn-error.log*
 # Temp
 *.tmp
 .cache/
+
+# Bug tracking documentation (internal reference, not for commits)
+bugfix.md
