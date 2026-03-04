@@ -60,18 +60,20 @@ export const campaignService = {
   },
 
   /**
-   * Activate a campaign
+   * Activate a campaign (PUT endpoint as per backend API)
    */
   async activateCampaign(id: string): Promise<Campaign> {
-    const response = await api.post<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}/activate`);
+    console.log('Calling PUT /campaigns/' + id + ' with active=true');
+    const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: true });
     return response.data;
   },
 
   /**
-   * Deactivate a campaign
+   * Deactivate a campaign (PUT endpoint as per backend API)
    */
   async deactivateCampaign(id: string): Promise<Campaign> {
-    const response = await api.post<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}/deactivate`);
+    console.log('Calling PUT /campaigns/' + id + ' with active=false');
+    const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: false });
     return response.data;
   },
 

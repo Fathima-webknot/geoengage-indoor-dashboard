@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip } from '@mui/material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
 import { Campaign } from '@/types/campaign.types';
@@ -24,7 +24,7 @@ const CampaignsPage = () => {
     setLoading(true);
     try {
       const response = await campaignService.getAllCampaigns();
-      console.log('Campaigns API response:', response);
+      console.log('📋 Campaigns API response:', response);
       
       // Handle different response formats
       let campaignsData: Campaign[] = [];
@@ -36,7 +36,7 @@ const CampaignsPage = () => {
         campaignsData = response.data;
       }
       
-      console.log('Parsed campaigns array:', campaignsData);
+      console.log('📊 Parsed campaigns:', campaignsData.map(c => ({ id: c.id, active: c.active })));
       
       // Sort campaigns: Active first, then Inactive
       const sortedCampaigns = campaignsData.sort((a, b) => {
@@ -45,6 +45,7 @@ const CampaignsPage = () => {
         return a.active ? -1 : 1;
       });
       
+      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ id: c.id, active: c.active })));
       setCampaigns(sortedCampaigns);
     } catch (error: any) {
       console.error('Failed to load campaigns:', error);
@@ -66,15 +67,26 @@ const CampaignsPage = () => {
   const handleActivate = async (id: string) => {
     setActionLoading(id);
     try {
-      await campaignService.updateCampaign(id, { active: true });
+      console.group('🟢 ACTIVATING CAMPAIGN');
+      console.log('Campaign ID to activate:', id);
+      console.log('Current active campaigns:', campaigns.filter(c => c.active).map(c => ({ id: c.id, message: c.message })));
+      console.log('Total active count BEFORE:', campaigns.filter(c => c.active).length);
+      
+      const result = await campaignService.activateCampaign(id);
+      console.log('✅ Backend activation response:', result);
+      
       setSnackbar({
         open: true,
         message: 'Campaign activated successfully!',
         severity: 'success',
       });
-      loadCampaigns();
+      
+      await loadCampaigns();
+      console.log('Total active count AFTER refresh:', campaigns.filter(c => c.active).length);
+      console.groupEnd();
     } catch (error: any) {
-      console.error('Failed to activate campaign:', error);
+      console.error('❌ Failed to activate campaign:', error);
+      console.groupEnd();
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Failed to activate campaign',
@@ -88,13 +100,15 @@ const CampaignsPage = () => {
   const handleDeactivate = async (id: string) => {
     setActionLoading(id);
     try {
-      await campaignService.updateCampaign(id, { active: false });
+      console.log('🔴 Deactivating campaign ID:', id);
+      const result = await campaignService.deactivateCampaign(id);
+      console.log('✅ Deactivation response:', result);
       setSnackbar({
         open: true,
         message: 'Campaign deactivated successfully!',
         severity: 'success',
       });
-      loadCampaigns();
+      await loadCampaigns();
     } catch (error: any) {
       console.error('Failed to deactivate campaign:', error);
       setSnackbar({
@@ -128,6 +142,9 @@ const CampaignsPage = () => {
     return true;
   });
 
+  // Count active campaigns
+  const activeCount = campaigns.filter(c => c.active).length;
+
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -135,6 +152,17 @@ const CampaignsPage = () => {
       </Typography>
 
       <CreateCampaignForm onSuccess={handleCampaignCreated} />
+
+      {/* Active Campaign Count Warning */}
+      {activeCount >= 3 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="body2">
+            <strong>Note:</strong> You currently have <strong>{activeCount} active campaigns</strong>. 
+            Your backend may have a limit on concurrent active campaigns. If you activate another campaign, 
+            one of the existing active campaigns may be automatically deactivated.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Status Filter Toggle Buttons */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
