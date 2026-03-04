@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip } from '@mui/material';
+import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
 import { Campaign } from '@/types/campaign.types';
@@ -19,6 +19,10 @@ const CampaignsPage = () => {
     message: string;
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'info' });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    campaignId: string | null;
+  }>({ open: false, campaignId: null });
 
   const loadCampaigns = async () => {
     setLoading(true);
@@ -121,6 +125,39 @@ const CampaignsPage = () => {
     }
   };
 
+  const handleDeleteClick = (id: string) => {
+    setDeleteDialog({ open: true, campaignId: id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.campaignId) return;
+
+    setActionLoading(deleteDialog.campaignId);
+    try {
+      await campaignService.deleteCampaign(deleteDialog.campaignId);
+      setSnackbar({
+        open: true,
+        message: 'Campaign deleted successfully!',
+        severity: 'success',
+      });
+      await loadCampaigns();
+    } catch (error: any) {
+      console.error('Failed to delete campaign:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to delete campaign',
+        severity: 'error',
+      });
+    } finally {
+      setActionLoading(null);
+      setDeleteDialog({ open: false, campaignId: null });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ open: false, campaignId: null });
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -197,7 +234,33 @@ const CampaignsPage = () => {
         actionLoading={actionLoading}
         onActivate={handleActivate}
         onDeactivate={handleDeactivate}
+        onDelete={handleDeleteClick}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Campaign?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this campaign? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}

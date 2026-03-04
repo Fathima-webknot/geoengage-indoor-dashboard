@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, Typography, Paper, Stack, Alert, Button } from '@mui/material';
+import { Box, Container, Typography, Paper, Stack, Alert, Button, Snackbar } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -10,8 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
  * Redirects to /campaigns if already authenticated
  */
 const HomePage = () => {
-  const { currentUser, login } = useAuth();
-  const [authLoading, setAuthLoading] = useState(false);
+  const { currentUser, login, error } = useAuth();
+  const [signingIn, setSigningIn] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const navigate = useNavigate();
 
   // Redirect to campaigns if already logged in
@@ -21,15 +22,27 @@ const HomePage = () => {
     }
   }, [currentUser, navigate]);
 
+  // Show error snackbar when error changes
+  useEffect(() => {
+    if (error) {
+      setSnackbarOpen(true);
+      setSigningIn(false);
+    }
+  }, [error]);
+
   const handleLogin = async () => {
-    setAuthLoading(true);
+    setSigningIn(true);
     try {
       await login();
       // Navigation will happen via useEffect after currentUser is set
     } catch (error) {
       console.error('Login failed:', error);
-      setAuthLoading(false);
+      setSigningIn(false);
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   // Don't render anything if user is already logged in (will redirect)
@@ -102,15 +115,27 @@ const HomePage = () => {
                 color="primary"
                 startIcon={<LoginIcon />}
                 onClick={handleLogin}
-                disabled={authLoading}
+                disabled={signingIn}
                 fullWidth
                 size="large"
               >
-                {authLoading ? 'Signing in...' : 'Sign In with Google'}
+                {signingIn ? 'Signing in...' : 'Sign In with Google'}
               </Button>
             </Stack>
           </Paper>
         </Paper>
+
+        {/* Error Snackbar */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

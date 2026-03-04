@@ -12,6 +12,16 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    open: true
+    open: true,
+    proxy: {
+      '/api/v1': {
+        target: 'https://danial-inequilateral-beverlee.ngrok-free.dev',
+        changeOrigin: true,
+        secure: false,
+        headers: {
+          'ngrok-skip-browser-warning': '69420'
+        }
+      }
+    }
   }
 })
