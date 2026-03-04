@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/config/firebase';
 import { User, AuthContextType } from '@/types/auth.types';
+import { adminService } from '@/services/adminService';
 
 /**
  * Create Authentication Context
@@ -51,16 +52,53 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Verify if user is admin
+   */
+  const verifyAdmin = async (user: FirebaseUser): Promise<boolean> => {
+    try {
+      console.log('Verifying admin for user:', user.email);
+      
+      const response = await adminService.verifyAdmin();
+      console.log('Admin verification response:', response);
+      
+      if (response.success) {
+        setError(null);
+        return true;
+      } else {
+        setError('Access denied. You need admin permissions to access this dashboard.');
+        await signOut(auth);
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Admin verification failed:', error);
+      setError(error.response?.data?.message || 'Failed to verify admin status');
+      await signOut(auth);
+      return false;
+    }
+  };
 
   /**
    * Login with Google using Firebase popup
    */
   const login = async (): Promise<void> => {
     try {
+      setError(null);
       const result = await signInWithPopup(auth, googleProvider);
       console.log('User signed in:', result.user.email);
-    } catch (error) {
+      
+      // Verify admin status
+      const isAdmin = await verifyAdmin(result.user);
+      if (!isAdmin) {
+        throw new Error('Admin verification failed');
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
+      if (!error.message?.includes('Admin verification')) {
+        setError('Login failed. Please try again.');
+      }
       throw error;
     }
   };
@@ -71,6 +109,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async (): Promise<void> => {
     try {
       await signOut(auth);
+      setError(null);
       console.log('User signed out');
     } catch (error) {
       console.error('Logout error:', error);
@@ -83,12 +122,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    * Runs once on mount and whenever auth state changes
    */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in
-        setFirebaseUser(firebaseUser);
-        setCurrentUser(mapFirebaseUser(firebaseUser));
+        // User is signed in - verify admin status
         console.log('Auth state changed: User logged in', firebaseUser.email);
+        setFirebaseUser(firebaseUser);
+        
+        const isAdmin = await verifyAdmin(firebaseUser);
+        if (isAdmin) {
+          setCurrentUser(mapFirebaseUser(firebaseUser));
+        } else {
+          setCurrentUser(null);
+        }
       } else {
         // User is signed out
         setFirebaseUser(null);
@@ -109,6 +154,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     currentUser,
     firebaseUser,
     loading,
+    error,
     login,
     logout,
   };

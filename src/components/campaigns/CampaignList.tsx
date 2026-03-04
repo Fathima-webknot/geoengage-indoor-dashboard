@@ -17,6 +17,7 @@ import {
 import {
   PowerSettingsNew as ActivateIcon,
   Block as DeactivateIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 
 interface CampaignListProps {
@@ -25,6 +26,7 @@ interface CampaignListProps {
   actionLoading?: string | null; // ID of campaign currently being updated
   onActivate?: (id: string) => void;
   onDeactivate?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export const CampaignList: React.FC<CampaignListProps> = ({
@@ -33,6 +35,7 @@ export const CampaignList: React.FC<CampaignListProps> = ({
   actionLoading = null,
   onActivate,
   onDeactivate,
+  onDelete,
 }) => {
   // Debug: Log first campaign to see backend structure
   React.useEffect(() => {
@@ -176,6 +179,20 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                           </span>
                         </Tooltip>
                       )}
+                      <Tooltip title="Delete Campaign">
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete && onDelete(campaign.id)}
+                            disabled={actionLoading === campaign.id}
+                            sx={{ 
+                              color: actionLoading === campaign.id ? '#ccc' : '#d32f2f',
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
