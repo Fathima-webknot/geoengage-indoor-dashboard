@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
 import { Campaign } from '@/types/campaign.types';
@@ -13,6 +13,7 @@ const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -36,7 +37,15 @@ const CampaignsPage = () => {
       }
       
       console.log('Parsed campaigns array:', campaignsData);
-      setCampaigns(campaignsData);
+      
+      // Sort campaigns: Active first, then Inactive
+      const sortedCampaigns = campaignsData.sort((a, b) => {
+        // Active campaigns (true) come before inactive (false)
+        if (a.active === b.active) return 0;
+        return a.active ? -1 : 1;
+      });
+      
+      setCampaigns(sortedCampaigns);
     } catch (error: any) {
       console.error('Failed to load campaigns:', error);
       console.error('Error details:', error.response?.data);
@@ -102,6 +111,23 @@ const CampaignsPage = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleStatusFilterChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newFilter: 'all' | 'active' | 'inactive' | null,
+  ) => {
+    if (newFilter !== null) {
+      setStatusFilter(newFilter);
+    }
+  };
+
+  // Filter campaigns based on selected status
+  const filteredCampaigns = campaigns.filter((campaign) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'active') return campaign.active === true;
+    if (statusFilter === 'inactive') return campaign.active === false;
+    return true;
+  });
+
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -110,8 +136,35 @@ const CampaignsPage = () => {
 
       <CreateCampaignForm onSuccess={handleCampaignCreated} />
 
+      {/* Status Filter Toggle Buttons */}
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="body1" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+          Filter by status:
+        </Typography>
+        <ToggleButtonGroup
+          value={statusFilter}
+          exclusive
+          onChange={handleStatusFilterChange}
+          aria-label="campaign status filter"
+          size="small"
+        >
+          <ToggleButton value="all" aria-label="all campaigns">
+            All
+          </ToggleButton>
+          <ToggleButton value="active" aria-label="active campaigns">
+            Active
+          </ToggleButton>
+          <ToggleButton value="inactive" aria-label="inactive campaigns">
+            Inactive
+          </ToggleButton>
+        </ToggleButtonGroup>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          ({filteredCampaigns.length} {filteredCampaigns.length === 1 ? 'campaign' : 'campaigns'})
+        </Typography>
+      </Box>
+
       <CampaignList
-        campaigns={campaigns}
+        campaigns={filteredCampaigns}
         loading={loading}
         actionLoading={actionLoading}
         onActivate={handleActivate}
