@@ -32,6 +32,58 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   const [selectedZone, setSelectedZone] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
 
+  // Validation states
+  const [errors, setErrors] = useState<{
+    campaignName?: string;
+    selectedZone?: string;
+    notificationMessage?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    campaignName?: boolean;
+    selectedZone?: boolean;
+    notificationMessage?: boolean;
+  }>({});
+
+  // Constants for validation
+  const MIN_MESSAGE_LENGTH = 10;
+  const MAX_MESSAGE_LENGTH = 200;
+
+  // Validation function
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    // Campaign name validation
+    if (!campaignName.trim()) {
+      newErrors.campaignName = 'Campaign name is required';
+    } else if (campaignName.trim().length < 3) {
+      newErrors.campaignName = 'Campaign name must be at least 3 characters';
+    }
+
+    // Zone validation
+    if (!selectedZone) {
+      newErrors.selectedZone = 'Please select a target zone';
+    }
+
+    // Message validation
+    if (!notificationMessage.trim()) {
+      newErrors.notificationMessage = 'Notification message is required';
+    } else if (notificationMessage.trim().length < MIN_MESSAGE_LENGTH) {
+      newErrors.notificationMessage = `Message must be at least ${MIN_MESSAGE_LENGTH} characters`;
+    } else if (notificationMessage.length > MAX_MESSAGE_LENGTH) {
+      newErrors.notificationMessage = `Message must not exceed ${MAX_MESSAGE_LENGTH} characters`;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Validate on field changes
+  useEffect(() => {
+    if (Object.keys(touched).length > 0) {
+      validateForm();
+    }
+  }, [campaignName, selectedZone, notificationMessage]);
+
   // Load zones on component mount
   useEffect(() => {
     const loadZones = async () => {
@@ -69,6 +121,20 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({
+      campaignName: true,
+      selectedZone: true,
+      notificationMessage: true,
+    });
+
+    // Validate form
+    if (!validateForm()) {
+      setError('Please fix the validation errors before submitting');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -94,6 +160,8 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         setCampaignName('');
         setSelectedZone('');
         setNotificationMessage('');
+        setTouched({});
+        setErrors({});
         setSuccess(false);
         
         if (onSuccess) {
@@ -148,14 +216,18 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
               label="Campaign Name"
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
+              onBlur={() => setTouched({ ...touched, campaignName: true })}
               placeholder="e.g., Summer Sale"
+              error={touched.campaignName && !!errors.campaignName}
+              helperText={touched.campaignName && errors.campaignName}
             />
 
-            <FormControl fullWidth required>
+            <FormControl fullWidth required error={touched.selectedZone && !!errors.selectedZone}>
               <InputLabel>Target Zone</InputLabel>
               <Select
                 value={selectedZone}
                 onChange={(e) => setSelectedZone(e.target.value)}
+                onBlur={() => setTouched({ ...touched, selectedZone: true })}
                 label="Target Zone"
                 disabled={zonesLoading}
               >
@@ -183,7 +255,14 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             label="Notification Message"
             value={notificationMessage}
             onChange={(e) => setNotificationMessage(e.target.value)}
+            onBlur={() => setTouched({ ...touched, notificationMessage: true })}
             placeholder="Enter the push notification text..."
+            error={touched.notificationMessage && !!errors.notificationMessage}
+            helperText={
+              touched.notificationMessage && errors.notificationMessage
+                ? errors.notificationMessage
+                : `${notificationMessage.length}/${MAX_MESSAGE_LENGTH} characters ${notificationMessage.length < MIN_MESSAGE_LENGTH ? `(min ${MIN_MESSAGE_LENGTH})` : ''}`
+            }
           />
 
           {/* Submit Button */}
@@ -193,7 +272,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
               variant="contained"
               size="large"
               startIcon={<AddIcon />}
-              disabled={loading}
+              disabled={loading || (Object.keys(touched).length > 0 && Object.keys(errors).length > 0)}
             >
               {loading ? 'Creating...' : 'Create Campaign'}
             </Button>
