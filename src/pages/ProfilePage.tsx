@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -13,17 +12,11 @@ import {
   Stack,
   Alert,
   Snackbar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
 } from '@mui/material';
 import {
   VerifiedUser as VerifiedIcon,
   ContentCopy as CopyIcon,
   Refresh as RefreshIcon,
-  Logout as LogoutIcon,
   Email as EmailIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
@@ -34,11 +27,9 @@ import { useAuth } from '@/contexts/AuthContext';
  * Admin profile management page
  */
 const ProfilePage = () => {
-  const { currentUser, firebaseUser, logout } = useAuth();
-  const navigate = useNavigate();
+  const { currentUser, firebaseUser } = useAuth();
   
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
-  const [logoutDialog, setLogoutDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Format date helper
@@ -80,19 +71,9 @@ const ProfilePage = () => {
     }
   };
 
-  // Handle logout with confirmation
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Failed to logout' });
-    }
-  };
-
   if (!currentUser || !firebaseUser) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <Typography variant="h6" color="text.secondary">
           Loading profile...
         </Typography>
@@ -101,35 +82,58 @@ const ProfilePage = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
       {/* Page Header */}
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        gutterBottom 
+        sx={{ 
+          mb: 4, 
+          fontWeight: 700,
+          color: 'primary.main',
+        }}
+      >
         My Profile
       </Typography>
 
       {/* Main Profile Card */}
-      <Card sx={{ mb: 3, boxShadow: 2 }}>
+      <Card 
+        sx={{ 
+          mb: 3, 
+          borderRadius: 3,
+          transition: 'transform 0.2s ease',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+          },
+        }}
+      >
         <CardContent sx={{ p: 4 }}>
           <Grid container spacing={3} alignItems="center">
             <Grid item>
               <Avatar
                 src={currentUser.photoURL || undefined}
                 alt={currentUser.displayName || undefined}
-                sx={{ width: 100, height: 100, border: '4px solid', borderColor: 'primary.main' }}
+                sx={{ 
+                  width: 100, 
+                  height: 100, 
+                  border: '3px solid',
+                  borderColor: 'primary.main',
+                }}
               >
                 {!currentUser.photoURL && (
-                  <Typography variant="h3">
+                  <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
                     {currentUser.displayName?.[0] || currentUser.email?.[0]?.toUpperCase()}
                   </Typography>
                 )}
               </Avatar>
             </Grid>
             <Grid item xs>
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
                 {currentUser.displayName || 'Admin User'}
               </Typography>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                <EmailIcon fontSize="small" color="action" />
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                <EmailIcon fontSize="small" color="primary" />
                 <Typography variant="body1" color="text.secondary">
                   {currentUser.email}
                 </Typography>
@@ -141,7 +145,7 @@ const ProfilePage = () => {
                     label="Email Verified"
                     color="success"
                     size="small"
-                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
                   />
                 )}
                 <Chip
@@ -149,6 +153,7 @@ const ProfilePage = () => {
                   label="Administrator"
                   color="primary"
                   size="small"
+                  sx={{ fontWeight: 600 }}
                 />
               </Stack>
             </Grid>
@@ -159,24 +164,34 @@ const ProfilePage = () => {
       <Grid container spacing={3}>
         {/* Account Information */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', boxShadow: 2 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+          <Card 
+            sx={{ 
+              height: '100%', 
+              borderRadius: 3,
+              transition: 'transform 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
                 Account Information
               </Typography>
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 3 }} />
               
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
                     User ID
                   </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all', flex: 1 }}>
                       {currentUser.uid.substring(0, 20)}...
                     </Typography>
                     <Button
                       size="small"
+                      variant="outlined"
                       startIcon={<CopyIcon />}
                       onClick={handleCopyUID}
                       sx={{ minWidth: 'auto' }}
@@ -187,28 +202,28 @@ const ProfilePage = () => {
                 </Box>
 
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
                     Sign-in Method
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
                     {firebaseUser.providerData[0]?.providerId === 'google.com' ? 'Google' : 'Email'}
                   </Typography>
                 </Box>
 
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
                     Account Created
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
                     {formatDate(firebaseUser.metadata.creationTime)}
                   </Typography>
                 </Box>
 
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
                     Last Sign-in
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
                     {formatDate(firebaseUser.metadata.lastSignInTime)}
                   </Typography>
                 </Box>
@@ -217,75 +232,75 @@ const ProfilePage = () => {
           </Card>
         </Grid>
 
-        {/* Admin Access & Security */}
+        {/* Admin Access & Session Management */}
         <Grid item xs={12} md={6}>
           <Stack spacing={3}>
             {/* Admin Access Card */}
-            <Card sx={{ boxShadow: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+            <Card 
+              sx={{ 
+                borderRadius: 3,
+                transition: 'transform 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
                   Admin Access
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Alert severity="success" icon={<VerifiedIcon />}>
-                  <Typography variant="body2">
-                    <strong>Verified Administrator</strong>
+                <Divider sx={{ mb: 3 }} />
+                <Alert 
+                  severity="success" 
+                  icon={<VerifiedIcon />}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    Verified Administrator
                   </Typography>
                   <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                    You have full system access to manage campaigns, analytics, and zones.
+                    Full system access to manage campaigns, analytics, and zones.
                   </Typography>
                 </Alert>
               </CardContent>
             </Card>
 
-            {/* Security Actions Card */}
-            <Card sx={{ boxShadow: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                  Security
+            {/* Session Management Card */}
+            <Card 
+              sx={{ 
+                borderRadius: 3,
+                transition: 'transform 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
+                  Session Management
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Stack spacing={2}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<RefreshIcon />}
-                    onClick={handleRefreshToken}
-                    disabled={refreshing}
-                    fullWidth
-                  >
-                    {refreshing ? 'Refreshing...' : 'Refresh Session'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<LogoutIcon />}
-                    onClick={() => setLogoutDialog(true)}
-                    fullWidth
-                  >
-                    Sign Out
-                  </Button>
-                </Stack>
+                <Divider sx={{ mb: 3 }} />
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleRefreshToken}
+                  disabled={refreshing}
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  {refreshing ? 'Refreshing...' : 'Refresh Session'}
+                </Button>
+                <Typography variant="caption" display="block" sx={{ mt: 2, color: 'text.secondary', textAlign: 'center' }}>
+                  Refresh your authentication token to extend your session
+                </Typography>
               </CardContent>
             </Card>
           </Stack>
         </Grid>
       </Grid>
-
-      {/* Logout Confirmation Dialog */}
-      <Dialog open={logoutDialog} onClose={() => setLogoutDialog(false)}>
-        <DialogTitle>Confirm Sign Out</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to sign out? You'll need to sign in again to access the admin panel.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLogoutDialog(false)}>Cancel</Button>
-          <Button onClick={handleLogout} color="error" variant="contained">
-            Sign Out
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar
@@ -293,6 +308,7 @@ const ProfilePage = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );

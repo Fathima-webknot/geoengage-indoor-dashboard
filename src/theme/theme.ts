@@ -11,49 +11,49 @@ import { createTheme } from '@mui/material/styles';
  */
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#1976d2', // Blue - main brand color for buttons, links, active states
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#3b82f6', // Modern blue - main brand color
+      light: '#60a5fa',
+      dark: '#2563eb',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#9e9e9e', // Gray - for inactive/secondary elements
-      light: '#bdbdbd',
-      dark: '#757575',
+      main: '#8b5cf6', // Purple - for secondary elements
+      light: '#a78bfa',
+      dark: '#7c3aed',
       contrastText: '#ffffff',
     },
     success: {
-      main: '#4caf50', // Green - for active campaigns, success states
-      light: '#81c784',
-      dark: '#388e3c',
+      main: '#10b981', // Green - for active campaigns, success states
+      light: '#34d399',
+      dark: '#059669',
     },
     error: {
-      main: '#f44336', // Red - for errors, delete actions
-      light: '#e57373',
-      dark: '#d32f2f',
+      main: '#ef4444', // Red - for errors, delete actions
+      light: '#f87171',
+      dark: '#dc2626',
     },
     warning: {
-      main: '#ff9800', // Orange - for warnings
-      light: '#ffb74d',
-      dark: '#f57c00',
+      main: '#f59e0b', // Amber - for warnings
+      light: '#fbbf24',
+      dark: '#d97706',
     },
     info: {
-      main: '#2196f3', // Light blue - for info messages
-      light: '#64b5f6',
-      dark: '#1976d2',
+      main: '#3b82f6', // Blue - for info messages
+      light: '#60a5fa',
+      dark: '#2563eb',
     },
     background: {
-      default: '#f5f5f5', // Light gray background for main content area
-      paper: '#ffffff', // White for cards, dialogs, modals
+      default: '#0f172a', // Dark slate background
+      paper: '#1e293b', // Slightly lighter for cards
     },
     text: {
-      primary: 'rgba(0, 0, 0, 0.87)',
-      secondary: 'rgba(0, 0, 0, 0.6)',
-      disabled: 'rgba(0, 0, 0, 0.38)',
+      primary: '#f1f5f9',
+      secondary: '#cbd5e1',
+      disabled: '#64748b',
     },
-    divider: 'rgba(0, 0, 0, 0.12)',
+    divider: '#334155',
   },
   
   typography: {
@@ -164,9 +164,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+          backgroundColor: '#1e293b',
           '&:hover': {
-            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.4)',
           },
           transition: 'box-shadow 0.3s ease-in-out',
         },
@@ -178,15 +179,16 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
+          backgroundColor: '#1e293b',
         },
         elevation1: {
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
         },
         elevation2: {
-          boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
         },
         elevation3: {
-          boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+          boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
         },
       },
     },
@@ -195,13 +197,13 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         root: {
-          borderBottom: '1px solid rgba(224, 224, 224, 1)',
+          borderBottom: '1px solid #334155',
           padding: '16px',
         },
         head: {
           fontWeight: 600,
-          backgroundColor: '#fafafa',
-          color: 'rgba(0, 0, 0, 0.87)',
+          backgroundColor: '#0f172a',
+          color: '#f1f5f9',
         },
       },
     },
@@ -218,7 +220,7 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#1976d2',
+            borderColor: '#3b82f6',
           },
         },
       },
@@ -238,7 +240,8 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          backgroundColor: '#1e293b',
         },
       },
     },
@@ -247,7 +250,8 @@ const theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+          borderRight: '1px solid #334155',
+          backgroundColor: '#1e293b',
           boxShadow: 'none',
         },
       },

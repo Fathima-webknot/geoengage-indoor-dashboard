@@ -78,7 +78,7 @@ export const CampaignList: React.FC<CampaignListProps> = ({
       </Typography>
       <TableContainer component={Paper}>
         <Table>
-          <TableHead sx={{ bgcolor: '#f5f5f5' }}>
+          <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
                 Status
