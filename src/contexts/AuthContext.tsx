@@ -54,15 +54,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   /**
    * Verify if user is admin
    */
-  const verifyAdmin = async (user: FirebaseUser): Promise<boolean> => {
+  const verifyAdmin = async (user: FirebaseUser, signal?: AbortSignal): Promise<boolean> => {
     try {
       console.log('Verifying admin for user:', user.email);
       
       const response = await adminService.verifyAdmin();
+      
+      // Check if request was aborted
+      if (signal?.aborted) {
+        console.log('Admin verification aborted');
+        return false;
+      }
+      
       console.log('Admin verification response:', response);
       
       if (response.success) {
@@ -86,12 +94,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    */
   const login = async (): Promise<void> => {
     try {
+      // Clear any previous errors on new login attempt
       setError(null);
+      
+      // Create new abort controller for this login attempt
+      const controller = new AbortController();
+      setAbortController(controller);
+      
       const result = await signInWithPopup(auth, googleProvider);
       console.log('User signed in:', result.user.email);
       
       // Verify admin status
-      const isAdmin = await verifyAdmin(result.user);
+      const isAdmin = await verifyAdmin(result.user, controller.signal);
       if (!isAdmin) {
         throw new Error('Admin verification failed');
       }
@@ -112,9 +126,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await signOut(auth);
       setError(null);
       console.log('User signed out');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout error:', error);
-      throw error;
+      // Set error state instead of throwing to provide user feedback
+      const errorMessage = error.message || 'Failed to logout. Please try again.';
+      setError(errorMessage);
+      // Still throw to allow caller to handle if needed
+      throw new Error(errorMessage);
     }
   };
 
@@ -184,7 +202,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      
+      // Cancel any pending API requests
+      if (abortController) {
+        console.log('Aborting pending auth requests on unmount');
+        abortController.abort();
+      }
+      
+      // Clear token refresh interval
+      if (tokenRefreshInterval) {
+        clearInterval(tokenRefreshInterval);
+      }
+    };
   }, []);
 
   /**

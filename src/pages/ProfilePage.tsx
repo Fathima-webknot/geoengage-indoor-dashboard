@@ -46,28 +46,42 @@ const ProfilePage = () => {
 
   // Copy UID to clipboard
   const handleCopyUID = async () => {
-    if (currentUser?.uid) {
-      try {
-        await navigator.clipboard.writeText(currentUser.uid);
-        setSnackbar({ open: true, message: 'UID copied to clipboard!' });
-      } catch (error) {
-        setSnackbar({ open: true, message: 'Failed to copy UID' });
-      }
-    } else {
+    if (!currentUser?.uid) {
       setSnackbar({ open: true, message: 'UID not available' });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(currentUser.uid);
+      setSnackbar({ open: true, message: 'UID copied to clipboard!' });
+    } catch (error: any) {
+      console.error('Failed to copy UID:', error);
+      // Fallback for browsers that don't support clipboard API
+      setSnackbar({ open: true, message: 'Failed to copy UID. Your browser may not support this feature.' });
     }
   };
 
   // Refresh authentication token
   const handleRefreshToken = async () => {
+    if (!firebaseUser) {
+      setSnackbar({ open: true, message: 'No active session to refresh' });
+      return;
+    }
+
     setRefreshing(true);
     try {
-      if (firebaseUser) {
-        await firebaseUser.getIdToken(true); // Force refresh
-        setSnackbar({ open: true, message: 'Session refreshed successfully!' });
+      await firebaseUser.getIdToken(true); // Force refresh
+      setSnackbar({ open: true, message: 'Session refreshed successfully!' });
+      console.log('✅ Session token refreshed manually');
+    } catch (error: any) {
+      console.error('Session refresh failed:', error);
+      const errorMessage = error.message || 'Failed to refresh session';
+      setSnackbar({ open: true, message: errorMessage });
+      
+      // If token refresh fails, user might need to re-login
+      if (error.code === 'auth/user-token-expired') {
+        setSnackbar({ open: true, message: 'Session expired. Please login again.' });
       }
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Failed to refresh session' });
     } finally {
       setRefreshing(false);
     }
