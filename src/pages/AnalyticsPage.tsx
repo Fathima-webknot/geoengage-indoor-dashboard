@@ -65,7 +65,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, color, bgCo
           sx={{
             p: 1.5,
             borderRadius: 2,
-            bgcolor: bgColor,
+            bgcolor: 'background.default',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -216,9 +216,9 @@ const AnalyticsPage = () => {
           <MetricCard
             title="Total Campaigns"
             value={metrics.totalCampaigns}
-            icon={<CampaignIcon sx={{ fontSize: 32, color: '#1976d2' }} />}
-            color="#1976d2"
-            bgColor="#e3f2fd"
+            icon={<CampaignIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
+            color="primary.main"
+            bgColor="background.default"
           />
         </Grid>
 
@@ -226,9 +226,9 @@ const AnalyticsPage = () => {
           <MetricCard
             title="Active Campaigns"
             value={metrics.activeCampaigns}
-            icon={<ActiveIcon sx={{ fontSize: 32, color: '#2e7d32' }} />}
-            color="#2e7d32"
-            bgColor="#e8f5e9"
+            icon={<ActiveIcon sx={{ fontSize: 32, color: 'success.main' }} />}
+            color="success.main"
+            bgColor="background.default"
           />
         </Grid>
 
@@ -236,9 +236,9 @@ const AnalyticsPage = () => {
           <MetricCard
             title="Inactive Campaigns"
             value={metrics.inactiveCampaigns}
-            icon={<InactiveIcon sx={{ fontSize: 32, color: '#f57c00' }} />}
-            color="#f57c00"
-            bgColor="#fff3e0"
+            icon={<InactiveIcon sx={{ fontSize: 32, color: 'warning.main' }} />}
+            color="warning.main"
+            bgColor="background.default"
           />
         </Grid>
 
@@ -246,9 +246,9 @@ const AnalyticsPage = () => {
           <MetricCard
             title="Total Zones"
             value={metrics.totalZones}
-            icon={<ZoneIcon sx={{ fontSize: 32, color: '#7b1fa2' }} />}
-            color="#7b1fa2"
-            bgColor="#f3e5f5"
+            icon={<ZoneIcon sx={{ fontSize: 32, color: 'secondary.main' }} />}
+            color="secondary.main"
+            bgColor="background.default"
           />
         </Grid>
       </Grid>
@@ -263,9 +263,9 @@ const AnalyticsPage = () => {
             <MetricCard
               title="Notifications Triggered"
               value={notificationMetrics.totalTriggered.toLocaleString()}
-              icon={<NotificationsIcon sx={{ fontSize: 32, color: '#1976d2' }} />}
-              color="#1976d2"
-              bgColor="#e3f2fd"
+              icon={<NotificationsIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
+              color="primary.main"
+              bgColor="background.default"
             />
           </Grid>
 
@@ -273,9 +273,9 @@ const AnalyticsPage = () => {
             <MetricCard
               title="Notifications Clicked"
               value={notificationMetrics.totalClicked.toLocaleString()}
-              icon={<ClickIcon sx={{ fontSize: 32, color: '#2e7d32' }} />}
-              color="#2e7d32"
-              bgColor="#e8f5e9"
+              icon={<ClickIcon sx={{ fontSize: 32, color: 'success.main' }} />}
+              color="success.main"
+              bgColor="background.default"
             />
           </Grid>
 
@@ -283,9 +283,9 @@ const AnalyticsPage = () => {
             <MetricCard
               title="Click-Through Rate (CTR)"
               value={`${notificationMetrics.ctr.toFixed(2)}%`}
-              icon={<CTRIcon sx={{ fontSize: 32, color: '#d32f2f' }} />}
-              color="#d32f2f"
-              bgColor="#ffebee"
+              icon={<CTRIcon sx={{ fontSize: 32, color: 'error.main' }} />}
+              color="error.main"
+              bgColor="background.default"
             />
           </Grid>
         </Grid>
@@ -338,7 +338,7 @@ const AnalyticsPage = () => {
         </Typography>
         <TableContainer component={Paper} elevation={2}>
           <Table>
-            <TableHead sx={{ bgcolor: '#f5f5f5' }}>
+            <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
                   Zone ID
@@ -370,7 +370,7 @@ const AnalyticsPage = () => {
                 zonePerformance.map((zone) => (
                   <TableRow
                     key={zone.zoneId}
-                    sx={{ '&:hover': { backgroundColor: '#fafafa' } }}
+                    sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                   >
                     <TableCell>
                       <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 500 }}>
@@ -388,9 +388,8 @@ const AnalyticsPage = () => {
                       <Chip
                         label={zone.activeCampaigns}
                         size="small"
+                        color="success"
                         sx={{
-                          bgcolor: '#e8f5e9',
-                          color: '#2e7d32',
                           fontWeight: 600,
                           minWidth: 50,
                         }}
@@ -400,9 +399,8 @@ const AnalyticsPage = () => {
                       <Chip
                         label={zone.inactiveCampaigns}
                         size="small"
+                        color="warning"
                         sx={{
-                          bgcolor: '#fff3e0',
-                          color: '#f57c00',
                           fontWeight: 600,
                           minWidth: 50,
                         }}
@@ -413,20 +411,19 @@ const AnalyticsPage = () => {
                         <Chip
                           label="No Campaigns"
                           size="small"
-                          sx={{ bgcolor: '#f5f5f5', color: '#757575' }}
+                          sx={{ color: 'text.secondary' }}
                         />
                       ) : zone.activeCampaigns > 0 ? (
                         <Chip
                           label="Active"
                           size="small"
                           color="success"
-                          sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
                         />
                       ) : (
                         <Chip
                           label="Inactive"
                           size="small"
-                          sx={{ bgcolor: '#f5f5f5', color: '#757575' }}
+                          sx={{ color: 'text.secondary' }}
                         />
                       )}
                     </TableCell>

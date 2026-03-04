@@ -12,13 +12,11 @@ import {
   ListItemText,
   Avatar,
   Typography,
-  IconButton,
   Divider,
 } from '@mui/material';
 import {
   Campaign as CampaignIcon,
   Analytics as AnalyticsIcon,
-  Person as PersonIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,7 +32,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Campaigns', path: '/campaigns', icon: <CampaignIcon /> },
   { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
-  { label: 'Profile', path: '/profile', icon: <PersonIcon /> },
 ];
 
 export const AdminLayout: React.FC = () => {
@@ -66,8 +63,8 @@ export const AdminLayout: React.FC = () => {
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
-            backgroundColor: '#f5f5f5',
-            borderRight: '1px solid #e0e0e0',
+            backgroundColor: '#1e293b',
+            borderRight: '1px solid #334155',
           },
         }}
       >
@@ -114,7 +111,7 @@ export const AdminLayout: React.FC = () => {
                     },
                   },
                   '&:hover': {
-                    backgroundColor: '#e0e0e0',
+                    backgroundColor: '#334155',
                   },
                 }}
               >
@@ -142,7 +139,7 @@ export const AdminLayout: React.FC = () => {
                 mx: 2,
                 borderRadius: 1,
                 '&:hover': {
-                  backgroundColor: '#e0e0e0',
+                  backgroundColor: '#334155',
                 },
               }}
             >
@@ -162,7 +159,7 @@ export const AdminLayout: React.FC = () => {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#fafafa',
+          backgroundColor: '#0f172a',
         }}
       >
         {/* Top AppBar */}
@@ -170,24 +167,36 @@ export const AdminLayout: React.FC = () => {
           position="static"
           elevation={0}
           sx={{
-            backgroundColor: 'white',
-            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#1e293b',
+            borderBottom: '1px solid #334155',
           }}
         >
           <Toolbar sx={{ justifyContent: 'flex-end' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2,
+                cursor: 'pointer',
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                '&:hover': {
+                  backgroundColor: '#334155',
+                },
+              }}
+              onClick={() => handleNavigation('/profile')}
+            >
               <Typography variant="body1" sx={{ color: 'text.primary' }}>
                 {currentUser?.displayName || currentUser?.email}
               </Typography>
-              <IconButton size="small">
-                <Avatar
-                  src={currentUser?.photoURL || undefined}
-                  alt={currentUser?.displayName || undefined}
-                  sx={{ width: 36, height: 36 }}
-                >
-                  {!currentUser?.photoURL && currentUser?.displayName?.[0]}
-                </Avatar>
-              </IconButton>
+              <Avatar
+                src={currentUser?.photoURL || undefined}
+                alt={currentUser?.displayName || undefined}
+                sx={{ width: 36, height: 36 }}
+              >
+                {!currentUser?.photoURL && currentUser?.displayName?.[0]}
+              </Avatar>
             </Box>
           </Toolbar>
         </AppBar>
