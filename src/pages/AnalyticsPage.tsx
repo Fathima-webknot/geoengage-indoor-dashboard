@@ -18,10 +18,14 @@ import {
   CheckCircle as ActiveIcon,
   Block as InactiveIcon,
   Place as ZoneIcon,
+  Notifications as NotificationsIcon,
+  TouchApp as ClickIcon,
+  TrendingUp as CTRIcon,
 } from '@mui/icons-material';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
+import { analyticsService } from '@/services/analyticsService';
 
 interface MetricCardProps {
   title: string;
@@ -93,6 +97,11 @@ const AnalyticsPage = () => {
     inactiveCampaigns: 0,
     totalZones: 0,
   });
+  const [notificationMetrics, setNotificationMetrics] = useState({
+    totalTriggered: 0,
+    totalClicked: 0,
+    ctr: 0,
+  });
   const [zonePerformance, setZonePerformance] = useState<ZonePerformance[]>([]);
 
   useEffect(() => {
@@ -117,6 +126,24 @@ const AnalyticsPage = () => {
           zones = zonesResponse;
         } else if (zonesResponse?.zones) {
           zones = zonesResponse.zones;
+        }
+
+        // Fetch notification analytics
+        try {
+          const notificationAnalytics = await analyticsService.getNotificationAnalytics();
+          setNotificationMetrics({
+            totalTriggered: notificationAnalytics.totalTriggered || 0,
+            totalClicked: notificationAnalytics.totalClicked || 0,
+            ctr: notificationAnalytics.ctr || 0,
+          });
+        } catch (error) {
+          console.error('Failed to load notification analytics:', error);
+          // Set default values if analytics API fails
+          setNotificationMetrics({
+            totalTriggered: 0,
+            totalClicked: 0,
+            ctr: 0,
+          });
         }
 
         // Calculate metrics
@@ -226,92 +253,83 @@ const AnalyticsPage = () => {
         </Grid>
       </Grid>
 
-      {/* Charts Section */}
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        {/* Campaign Status Distribution */}
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-              Campaign Status Distribution
-            </Typography>
-            {metrics.totalCampaigns > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Active', value: metrics.activeCampaigns },
-                      { name: 'Inactive', value: metrics.inactiveCampaigns },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    <Cell fill="#2e7d32" />
-                    <Cell fill="#f57c00" />
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-                <Typography variant="body2" color="text.secondary">
-                  No campaigns to display
-                </Typography>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
+      {/* Notification Metrics */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+          Notification Performance
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={4}>
+            <MetricCard
+              title="Notifications Triggered"
+              value={notificationMetrics.totalTriggered.toLocaleString()}
+              icon={<NotificationsIcon sx={{ fontSize: 32, color: '#1976d2' }} />}
+              color="#1976d2"
+              bgColor="#e3f2fd"
+            />
+          </Grid>
 
-        {/* Campaigns Per Zone Distribution */}
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-              Campaigns Per Zone Distribution
-            </Typography>
-            {zonePerformance.filter(z => z.totalCampaigns > 0).length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={zonePerformance
-                      .filter(z => z.totalCampaigns > 0)
-                      .map(z => ({
-                        name: z.zoneId.substring(0, 8) + '...',
-                        value: z.totalCampaigns,
-                      }))}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    <Cell fill="#1976d2" />
-                    <Cell fill="#7b1fa2" />
-                    <Cell fill="#d32f2f" />
-                    <Cell fill="#f57c00" />
-                    <Cell fill="#388e3c" />
-                    <Cell fill="#0288d1" />
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-                <Typography variant="body2" color="text.secondary">
-                  No zones with campaigns
-                </Typography>
-              </Box>
-            )}
-          </Paper>
+          <Grid item xs={12} sm={6} md={4}>
+            <MetricCard
+              title="Notifications Clicked"
+              value={notificationMetrics.totalClicked.toLocaleString()}
+              icon={<ClickIcon sx={{ fontSize: 32, color: '#2e7d32' }} />}
+              color="#2e7d32"
+              bgColor="#e8f5e9"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
+            <MetricCard
+              title="Click-Through Rate (CTR)"
+              value={`${notificationMetrics.ctr.toFixed(2)}%`}
+              icon={<CTRIcon sx={{ fontSize: 32, color: '#d32f2f' }} />}
+              color="#d32f2f"
+              bgColor="#ffebee"
+            />
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
+
+      {/* Notification Performance Chart */}
+      <Box sx={{ mt: 4 }}>
+        <Paper elevation={2} sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+            Notification Engagement Overview
+          </Typography>
+          {notificationMetrics.totalTriggered > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={[
+                  {
+                    name: 'Notifications',
+                    Triggered: notificationMetrics.totalTriggered,
+                    Clicked: notificationMetrics.totalClicked,
+                  },
+                ]}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value: number) => value.toLocaleString()}
+                  contentStyle={{ borderRadius: 8 }}
+                />
+                <Legend />
+                <Bar dataKey="Triggered" fill="#1976d2" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="Clicked" fill="#2e7d32" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}>
+              <Typography variant="body2" color="text.secondary">
+                No notification data available
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+      </Box>
 
       {/* Zone Performance Table */}
       <Box sx={{ mt: 4 }}>
