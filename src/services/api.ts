@@ -34,8 +34,8 @@ apiClient.interceptors.request.use(
       const currentUser = auth.currentUser;
 
       if (currentUser) {
-        // Get the ID token from Firebase
-        const token = await currentUser.getIdToken();
+        // Get the ID token from Firebase (force refresh if expired)
+        const token = await currentUser.getIdToken(true);
         
         // Log token in a persistent way
         console.group('🔑 FIREBASE TOKEN - Click to expand and copy');

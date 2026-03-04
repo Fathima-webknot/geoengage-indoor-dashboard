@@ -110,7 +110,7 @@ const ProfilePage = () => {
       >
         <CardContent sx={{ p: 4 }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item>
+            <Grid size="auto">
               <Avatar
                 src={currentUser.photoURL || undefined}
                 alt={currentUser.displayName || undefined}
@@ -128,7 +128,7 @@ const ProfilePage = () => {
                 )}
               </Avatar>
             </Grid>
-            <Grid item xs>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
                 {currentUser.displayName || 'Admin User'}
               </Typography>
@@ -163,7 +163,7 @@ const ProfilePage = () => {
 
       <Grid container spacing={3}>
         {/* Account Information */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card 
             sx={{ 
               height: '100%', 
@@ -233,7 +233,7 @@ const ProfilePage = () => {
         </Grid>
 
         {/* Admin Access & Session Management */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Stack spacing={3}>
             {/* Admin Access Card */}
             <Card 

@@ -212,7 +212,7 @@ const AnalyticsPage = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Total Campaigns"
             value={metrics.totalCampaigns}
@@ -222,7 +222,7 @@ const AnalyticsPage = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Active Campaigns"
             value={metrics.activeCampaigns}
@@ -232,7 +232,7 @@ const AnalyticsPage = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Inactive Campaigns"
             value={metrics.inactiveCampaigns}
@@ -242,7 +242,7 @@ const AnalyticsPage = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Total Zones"
             value={metrics.totalZones}
@@ -259,7 +259,7 @@ const AnalyticsPage = () => {
           Notification Performance
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <MetricCard
               title="Notifications Triggered"
               value={notificationMetrics.totalTriggered.toLocaleString()}
@@ -269,7 +269,7 @@ const AnalyticsPage = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <MetricCard
               title="Notifications Clicked"
               value={notificationMetrics.totalClicked.toLocaleString()}
@@ -279,7 +279,7 @@ const AnalyticsPage = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <MetricCard
               title="Click-Through Rate (CTR)"
               value={`${notificationMetrics.ctr.toFixed(2)}%`}

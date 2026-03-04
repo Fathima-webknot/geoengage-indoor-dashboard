@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   /**
    * Verify if user is admin
@@ -116,6 +117,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       throw error;
     }
   };
+
+  /**
+   * Setup automatic token refresh every 55 minutes
+   * Firebase tokens expire after 60 minutes
+   */
+  useEffect(() => {
+    if (firebaseUser) {
+      // Clear any existing interval
+      if (tokenRefreshInterval) {
+        clearInterval(tokenRefreshInterval);
+      }
+
+      // Refresh token every 55 minutes (5 minutes before expiry)
+      const interval = setInterval(async () => {
+        try {
+          console.log('🔄 Auto-refreshing Firebase token...');
+          await firebaseUser.getIdToken(true);
+          console.log('✅ Token refreshed successfully');
+        } catch (error) {
+          console.error('❌ Token refresh failed:', error);
+        }
+      }, 55 * 60 * 1000); // 55 minutes in milliseconds
+
+      setTokenRefreshInterval(interval);
+
+      // Cleanup interval on unmount or user change
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    } else {
+      // Clear interval when user logs out
+      if (tokenRefreshInterval) {
+        clearInterval(tokenRefreshInterval);
+        setTokenRefreshInterval(null);
+      }
+    }
+  }, [firebaseUser]);
 
   /**
    * Listen to Firebase auth state changes
