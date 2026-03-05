@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [verifying, setVerifying] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
@@ -96,6 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Clear any previous errors on new login attempt
       setError(null);
+      setVerifying(false);
       
       // Create new abort controller for this login attempt
       const controller = new AbortController();
@@ -104,13 +106,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const result = await signInWithPopup(auth, googleProvider);
       console.log('User signed in:', result.user.email);
       
+      // Show verifying state during admin check
+      setVerifying(true);
+      
       // Verify admin status
       const isAdmin = await verifyAdmin(result.user, controller.signal);
+      
+      setVerifying(false);
+      
       if (!isAdmin) {
         throw new Error('Admin verification failed');
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      setVerifying(false);
       if (!error.message?.includes('Admin verification')) {
         setError('Login failed. Please try again.');
       }
@@ -134,6 +143,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Still throw to allow caller to handle if needed
       throw new Error(errorMessage);
     }
+  };
+
+  /**
+   * Clear error state
+   */
+  const clearError = (): void => {
+    setError(null);
   };
 
   /**
@@ -225,9 +241,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     currentUser,
     firebaseUser,
     loading,
+    verifying,
     error,
     login,
     logout,
+    clearError,
   };
 
   return (

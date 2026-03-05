@@ -30,7 +30,7 @@ interface CampaignListProps {
   onDelete?: (id: string) => void;
 }
 
-export const CampaignList: React.FC<CampaignListProps> = ({
+export const CampaignList: React.FC<CampaignListProps> = React.memo(({
   campaigns,
   loading = false,
   actionLoading = null,
@@ -38,22 +38,6 @@ export const CampaignList: React.FC<CampaignListProps> = ({
   onDeactivate,
   onDelete,
 }) => {
-  // Debug: Log first campaign to see backend structure
-  React.useEffect(() => {
-    if (campaigns.length > 0) {
-      console.group('📋 Backend Campaign Structure');
-      console.log('First campaign:', campaigns[0]);
-      console.log('Available fields:', Object.keys(campaigns[0]));
-      console.log('Name field value:', campaigns[0].name);
-      console.log('All name-like fields:', {
-        name: campaigns[0].name,
-        campaign_name: campaigns[0].campaign_name,
-        title: campaigns[0].title,
-      });
-      console.groupEnd();
-    }
-  }, [campaigns]);
-
   // Skeleton loader rows
   const renderSkeletonRows = () => {
     return Array.from({ length: 3 }).map((_, index) => (
@@ -127,7 +111,12 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                 <TableRow
                   key={campaign.id}
                   sx={{
-                    '&:hover': { backgroundColor: '#fafafa' },
+                    transition: 'all 0.2s ease',
+                    '&:hover': { 
+                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                      transform: 'translateX(4px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    },
                   }}
                 >
                   <TableCell>
@@ -150,7 +139,7 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {campaign.zone_id ? campaign.zone_id.substring(0, 8) + '...' : 'N/A'}
+                      {campaign.zone_name || (campaign.zone_id ? campaign.zone_id.substring(0, 8) + '...' : 'N/A')}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -224,4 +213,4 @@ export const CampaignList: React.FC<CampaignListProps> = ({
       </TableContainer>
     </Box>
   );
-};
+});

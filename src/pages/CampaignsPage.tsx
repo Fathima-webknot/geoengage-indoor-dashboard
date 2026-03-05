@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { Campaign as CampaignIcon } from '@mui/icons-material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
+import { EmptyState } from '@/components/EmptyState';
 import { Campaign } from '@/types/campaign.types';
 import { campaignService } from '@/services/campaignService';
+import { zoneService } from '@/services/zoneService';
+import { getErrorMessage, getSuccessMessage } from '@/utils/errorMessages';
 
 /**
  * CampaignsPage
@@ -12,6 +16,7 @@ import { campaignService } from '@/services/campaignService';
 const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [snackbar, setSnackbar] = useState<{
@@ -26,35 +31,78 @@ const CampaignsPage = () => {
 
   const loadCampaigns = async () => {
     setLoading(true);
+    setLoadingTimeout(false);
+    
+    // Set timeout to show error if loading takes too long
+    const timeoutId = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 15000); // 15 seconds
+    
     try {
-      const response = await campaignService.getAllCampaigns();
-      console.log('📋 Campaigns API response:', response);
+      // Fetch both campaigns and zones
+      const [campaignsResponse, zonesResponse] = await Promise.all([
+        campaignService.getAllCampaigns(),
+        zoneService.getAllZones(),
+      ]);
       
-      // Handle different response formats
-      let campaignsData: Campaign[] = [];
-      if (Array.isArray(response)) {
-        campaignsData = response;
-      } else if (response && Array.isArray(response.campaigns)) {
-        campaignsData = response.campaigns;
-      } else if (response && response.data && Array.isArray(response.data)) {
-        campaignsData = response.data;
+      console.log('📋 Campaigns API response:', campaignsResponse);
+      console.log('🗺️ Zones API response:', zonesResponse);
+      
+      // Handle different response formats for campaigns
+      let campaignsData: any[] = [];
+      if (Array.isArray(campaignsResponse)) {
+        campaignsData = campaignsResponse;
+      } else if (campaignsResponse && Array.isArray(campaignsResponse.campaigns)) {
+        campaignsData = campaignsResponse.campaigns;
+      } else if (campaignsResponse && campaignsResponse.data && Array.isArray(campaignsResponse.data)) {
+        campaignsData = campaignsResponse.data;
       }
       
-      console.log('📊 Parsed campaigns:', campaignsData.map(c => ({ id: c.id, active: c.active })));
+      // Handle different response formats for zones
+      let zonesData: any[] = [];
+      if (Array.isArray(zonesResponse)) {
+        zonesData = zonesResponse;
+      } else if (zonesResponse && Array.isArray(zonesResponse.zones)) {
+        zonesData = zonesResponse.zones;
+      } else if (zonesResponse && zonesResponse.data && Array.isArray(zonesResponse.data)) {
+        zonesData = zonesResponse.data;
+      }
+      
+      // Create zone lookup map (zone_id -> zone_name)
+      const zoneMap = new Map<string, string>();
+      zonesData.forEach((zone: any) => {
+        const zoneId = zone.id || zone.zone_id || zone.zoneId;
+        const zoneName = zone.name || zone.zone_name || zone.zoneName;
+        if (zoneId && zoneName) {
+          zoneMap.set(zoneId, zoneName);
+        }
+      });
+      
+      // Enrich campaigns with zone names
+      const enrichedCampaigns = campaignsData.map((campaign: any) => {
+        const zoneId = campaign.zone_id || campaign.zoneId;
+        return {
+          ...campaign,
+          zone_name: zoneId ? zoneMap.get(zoneId) || 'Unknown Zone' : null,
+        };
+      });
+      
+      console.log('📊 Parsed campaigns:', enrichedCampaigns.map(c => ({ id: c.id, active: c.active, zone_name: c.zone_name })));
       
       // Sort campaigns: Active first, then Inactive
-      const sortedCampaigns = campaignsData.sort((a, b) => {
+      const sortedCampaigns = enrichedCampaigns.sort((a, b) => {
         // Active campaigns (true) come before inactive (false)
         if (a.active === b.active) return 0;
         return a.active ? -1 : 1;
       });
       
-      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ id: c.id, active: c.active })));
+      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ id: c.id, active: c.active, zone_name: c.zone_name })));
       setCampaigns(sortedCampaigns);
     } catch (error: any) {
       console.error('Failed to load campaigns:', error);
       console.error('Error details:', error.response?.data);
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -81,7 +129,7 @@ const CampaignsPage = () => {
       
       setSnackbar({
         open: true,
-        message: 'Campaign activated successfully!',
+        message: getSuccessMessage('campaign-activated'),
         severity: 'success',
       });
       
@@ -93,7 +141,7 @@ const CampaignsPage = () => {
       console.groupEnd();
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to activate campaign',
+        message: getErrorMessage(error),
         severity: 'error',
       });
     } finally {
@@ -109,7 +157,7 @@ const CampaignsPage = () => {
       console.log('✅ Deactivation response:', result);
       setSnackbar({
         open: true,
-        message: 'Campaign deactivated successfully!',
+        message: getSuccessMessage('campaign-deactivated'),
         severity: 'success',
       });
       await loadCampaigns();
@@ -117,7 +165,7 @@ const CampaignsPage = () => {
       console.error('Failed to deactivate campaign:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to deactivate campaign',
+        message: getErrorMessage(error),
         severity: 'error',
       });
     } finally {
@@ -137,7 +185,7 @@ const CampaignsPage = () => {
       await campaignService.deleteCampaign(deleteDialog.campaignId);
       setSnackbar({
         open: true,
-        message: 'Campaign deleted successfully!',
+        message: getSuccessMessage('campaign-deleted'),
         severity: 'success',
       });
       await loadCampaigns();
@@ -145,7 +193,7 @@ const CampaignsPage = () => {
       console.error('Failed to delete campaign:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to delete campaign',
+        message: getErrorMessage(error),
         severity: 'error',
       });
     } finally {
@@ -171,16 +219,20 @@ const CampaignsPage = () => {
     }
   };
 
-  // Filter campaigns based on selected status
-  const filteredCampaigns = campaigns.filter((campaign) => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'active') return campaign.active === true;
-    if (statusFilter === 'inactive') return campaign.active === false;
-    return true;
-  });
+  // Filter campaigns based on selected status (memoized to prevent re-renders)
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter((campaign) => {
+      if (statusFilter === 'all') return true;
+      if (statusFilter === 'active') return campaign.active === true;
+      if (statusFilter === 'inactive') return campaign.active === false;
+      return true;
+    });
+  }, [campaigns, statusFilter]);
 
-  // Count active campaigns
-  const activeCount = campaigns.filter(c => c.active).length;
+  // Count active campaigns (memoized)
+  const activeCount = useMemo(() => {
+    return campaigns.filter(c => c.active).length;
+  }, [campaigns]);
 
   return (
     <Box>
@@ -228,14 +280,43 @@ const CampaignsPage = () => {
         </Typography>
       </Box>
 
-      <CampaignList
-        campaigns={filteredCampaigns}
-        loading={loading}
-        actionLoading={actionLoading}
-        onActivate={handleActivate}
-        onDeactivate={handleDeactivate}
-        onDelete={handleDeleteClick}
-      />
+      {/* Show loading timeout error */}
+      {loadingTimeout && loading && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="body2">
+            Loading is taking longer than expected. Please check your connection or try refreshing the page.
+          </Typography>
+        </Alert>
+      )}
+
+      {/* Show empty state when no campaigns and not loading */}
+      {!loading && filteredCampaigns.length === 0 && (
+        <EmptyState
+          icon={<CampaignIcon />}
+          title={statusFilter === 'all' ? 'No Campaigns Yet' : `No ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Campaigns`}
+          description={
+            statusFilter === 'all'
+              ? 'Get started by creating your first location-based campaign. Target specific zones and engage users with personalized notifications.'
+              : `There are currently no ${statusFilter} campaigns. Try changing the filter or create a new campaign.`
+          }
+          action={{
+            label: 'Scroll Up to Create Campaign',
+            onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+          }}
+        />
+      )}
+
+      {/* Show campaign list when there are campaigns */}
+      {(loading || filteredCampaigns.length > 0) && (
+        <CampaignList
+          campaigns={filteredCampaigns}
+          loading={loading}
+          actionLoading={actionLoading}
+          onActivate={handleActivate}
+          onDeactivate={handleDeactivate}
+          onDelete={handleDeleteClick}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog
@@ -271,7 +352,18 @@ const CampaignsPage = () => {
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          variant="filled"
+          sx={{ 
+            width: '100%',
+            boxShadow: 3,
+            '& .MuiAlert-icon': {
+              fontSize: '24px',
+            },
+            '& .MuiAlert-message': {
+              fontSize: '0.95rem',
+              fontWeight: 500,
+            },
+          }}
         >
           {snackbar.message}
         </Alert>

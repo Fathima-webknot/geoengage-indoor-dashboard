@@ -19,7 +19,9 @@ export interface AuthContextType {
   currentUser: User | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
+  verifying: boolean;
   error: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
