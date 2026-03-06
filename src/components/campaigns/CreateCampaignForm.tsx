@@ -10,9 +10,10 @@ import {
   Typography,
   Alert,
   Stack,
+  FormHelperText,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { CampaignType } from '@/types/campaign.types';
+import { CampaignTrigger } from '@/types/campaign.types';
 import { Zone } from '@/types/zone.types';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
@@ -31,6 +32,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   const [campaignName, setCampaignName] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
+  const [triggerType, setTriggerType] = useState<CampaignTrigger>(CampaignTrigger.ZONE_ENTRY);
 
   // Validation states
   const [errors, setErrors] = useState<{
@@ -140,12 +142,12 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     setSuccess(false);
 
     try {
-      // Backend expects snake_case field names
-      const payload: any = {
-        name: campaignName,
-        zone_id: selectedZone, // Backend expects singular zone_id, not zoneIds array
-        message: notificationMessage, // Backend expects 'message', not 'contentMessage'
-        type: CampaignType.PROMOTIONAL,
+      // Backend expects these exact field names
+      const payload = {
+        zone_id: selectedZone,
+        message: notificationMessage,
+        trigger: triggerType,
+        name: campaignName.trim(),
       };
 
       console.group('📤 Creating Campaign');
@@ -160,6 +162,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         setCampaignName('');
         setSelectedZone('');
         setNotificationMessage('');
+        setTriggerType(CampaignTrigger.ZONE_ENTRY);
         setTouched({});
         setErrors({});
         setSuccess(false);
@@ -208,20 +211,21 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
-          {/* Campaign Name and Target Zone */}
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              required
-              fullWidth
-              label="Campaign Name"
-              value={campaignName}
-              onChange={(e) => setCampaignName(e.target.value)}
-              onBlur={() => setTouched({ ...touched, campaignName: true })}
-              placeholder="e.g., Summer Sale"
-              error={touched.campaignName && !!errors.campaignName}
-              helperText={touched.campaignName && errors.campaignName}
-            />
+          {/* Campaign Name */}
+          <TextField
+            required
+            fullWidth
+            label="Campaign Name"
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            onBlur={() => setTouched({ ...touched, campaignName: true })}
+            placeholder="e.g., Summer Sale, Winback Offer"
+            error={touched.campaignName && !!errors.campaignName}
+            helperText={touched.campaignName && errors.campaignName}
+          />
 
+          {/* Target Zone and Trigger Type */}
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <FormControl fullWidth required error={touched.selectedZone && !!errors.selectedZone}>
               <InputLabel>Target Zone</InputLabel>
               <Select
@@ -243,6 +247,30 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                   ))
                 )}
               </Select>
+              {touched.selectedZone && errors.selectedZone && (
+                <FormHelperText>{errors.selectedZone}</FormHelperText>
+              )}
+            </FormControl>
+
+            <FormControl fullWidth required>
+              <InputLabel>Trigger Type</InputLabel>
+              <Select
+                value={triggerType}
+                onChange={(e) => setTriggerType(e.target.value as CampaignTrigger)}
+                label="Trigger Type"
+              >
+                <MenuItem value={CampaignTrigger.ZONE_ENTRY}>
+                  Zone Entry
+                </MenuItem>
+                <MenuItem value={CampaignTrigger.ZONE_EXIT_NO_TXN}>
+                  Zone Exit
+                </MenuItem>
+              </Select>
+              <FormHelperText>
+                {triggerType === CampaignTrigger.ZONE_ENTRY 
+                  ? 'Campaign triggers when user enters the zone' 
+                  : 'Campaign triggers when user exits the zone'}
+              </FormHelperText>
             </FormControl>
           </Stack>
 

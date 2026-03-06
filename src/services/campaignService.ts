@@ -3,7 +3,6 @@ import {
   Campaign,
   CreateCampaignRequest,
   UpdateCampaignRequest,
-  CampaignListResponse,
   CampaignFilters,
 } from '@/types/campaign.types';
 
@@ -12,32 +11,54 @@ const CAMPAIGNS_ENDPOINT = '/campaigns';
 export const campaignService = {
   /**
    * Get all campaigns with optional filters
+   * Supports filtering by zone_id and trigger type
    */
-  async getAllCampaigns(filters?: CampaignFilters): Promise<CampaignListResponse> {
+  async getAllCampaigns(filters?: CampaignFilters): Promise<Campaign[]> {
     const params = new URLSearchParams();
     
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.search) params.append('search', filters.search);
-    if (filters?.page !== undefined) params.append('page', filters.page.toString());
-    if (filters?.pageSize !== undefined) params.append('pageSize', filters.pageSize.toString());
+    if (filters?.zone_id) params.append('zone_id', filters.zone_id);
+    if (filters?.trigger) params.append('trigger', filters.trigger);
 
-    const response = await api.get<CampaignListResponse>(
-      `${CAMPAIGNS_ENDPOINT}?${params.toString()}`
-    );
-    return response.data;
+    const queryString = params.toString();
+    const url = queryString ? `${CAMPAIGNS_ENDPOINT}?${queryString}` : CAMPAIGNS_ENDPOINT;
+    
+    console.log('📡 Fetching campaigns from:', url);
+    console.log('🔗 Full URL:', `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}${url}`);
+    
+    try {
+      const response = await api.get<Campaign[]>(url);
+      console.log('✅ Campaigns response:', response);
+      console.log('📊 Campaigns data:', response.data);
+      
+      // Handle case where backend might return an object instead of array
+      if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+        console.warn('⚠️ Backend returned object instead of array, attempting to extract array');
+        const dataObj = response.data as any;
+        if (Array.isArray(dataObj.campaigns)) return dataObj.campaigns;
+        if (Array.isArray(dataObj.data)) return dataObj.data;
+      }
+      
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error: any) {
+      console.error('❌ Failed to fetch campaigns:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      throw error;
+    }
   },
 
   /**
    * Get a single campaign by ID
    */
-  async getCampaignById(id: string): Promise<Campaign> {
+  async getCampaignById(id: number): Promise<Campaign> {
     const response = await api.get<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`);
     return response.data;
   },
 
   /**
    * Create a new campaign
+   * POST /api/v1/campaigns
    */
   async createCampaign(data: CreateCampaignRequest): Promise<Campaign> {
     const response = await api.post<Campaign>(CAMPAIGNS_ENDPOINT, data);
@@ -46,8 +67,9 @@ export const campaignService = {
 
   /**
    * Update an existing campaign
+   * PUT /api/v1/campaigns/{id}
    */
-  async updateCampaign(id: string, data: UpdateCampaignRequest): Promise<Campaign> {
+  async updateCampaign(id: number, data: UpdateCampaignRequest): Promise<Campaign> {
     const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, data);
     return response.data;
   },
@@ -55,46 +77,27 @@ export const campaignService = {
   /**
    * Delete a campaign
    */
-  async deleteCampaign(id: string): Promise<void> {
+  async deleteCampaign(id: number): Promise<void> {
     await api.delete(`${CAMPAIGNS_ENDPOINT}/${id}`);
   },
 
   /**
-   * Activate a campaign (PUT endpoint as per backend API)
+   * Activate a campaign
+   * When activating, backend will automatically deactivate other campaigns 
+   * with the same zone_id and trigger type
    */
-  async activateCampaign(id: string): Promise<Campaign> {
-    console.log('Calling PUT /campaigns/' + id + ' with active=true');
+  async activateCampaign(id: number): Promise<Campaign> {
+    console.log(`Activating campaign ${id} - PUT ${CAMPAIGNS_ENDPOINT}/${id} with active=true`);
     const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: true });
     return response.data;
   },
 
   /**
-   * Deactivate a campaign (PUT endpoint as per backend API)
+   * Deactivate a campaign
    */
-  async deactivateCampaign(id: string): Promise<Campaign> {
-    console.log('Calling PUT /campaigns/' + id + ' with active=false');
+  async deactivateCampaign(id: number): Promise<Campaign> {
+    console.log(`Deactivating campaign ${id} - PUT ${CAMPAIGNS_ENDPOINT}/${id} with active=false`);
     const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: false });
-    return response.data;
-  },
-
-  /**
-   * Pause a campaign
-   */
-  async pauseCampaign(id: string): Promise<Campaign> {
-    const response = await api.post<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}/pause`);
-    return response.data;
-  },
-
-  /**
-   * Get campaign performance metrics
-   */
-  async getCampaignMetrics(id: string): Promise<{
-    impressions: number;
-    clicks: number;
-    clickThroughRate: number;
-    uniqueUsers: number;
-  }> {
-    const response = await api.get(`${CAMPAIGNS_ENDPOINT}/${id}/metrics`);
     return response.data;
   },
 };

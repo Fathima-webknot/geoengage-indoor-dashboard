@@ -4,14 +4,7 @@ import {
   Typography,
   Grid,
   Paper,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
+  Alert,
   Skeleton,
 } from '@mui/material';
 import {
@@ -23,6 +16,7 @@ import {
   TouchApp as ClickIcon,
   TrendingUp as CTRIcon,
 } from '@mui/icons-material';
+import { EmptyState } from '@/components/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
@@ -79,19 +73,13 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, color, bgCo
   );
 };
 
-interface ZonePerformance {
-  zoneId: string;
-  totalCampaigns: number;
-  activeCampaigns: number;
-  inactiveCampaigns: number;
-}
-
 /**
  * AnalyticsPage
- * Dashboard showing zone performance metrics and analytics
+ * Dashboard showing campaign and notification analytics
  */
 const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [metrics, setMetrics] = useState({
     totalCampaigns: 0,
     activeCampaigns: 0,
@@ -103,11 +91,17 @@ const AnalyticsPage = () => {
     totalClicked: 0,
     ctr: 0,
   });
-  const [zonePerformance, setZonePerformance] = useState<ZonePerformance[]>([]);
 
   useEffect(() => {
     const loadMetrics = async () => {
       setLoading(true);
+      setLoadingTimeout(false);
+      
+      // Set timeout for loading indicator
+      const timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 15000);
+      
       try {
         // Fetch campaigns
         const campaignsResponse = await campaignService.getAllCampaigns();
@@ -157,40 +151,10 @@ const AnalyticsPage = () => {
           inactiveCampaigns,
           totalZones: zones.length,
         });
-
-        // Calculate zone performance
-        const zoneStats: { [key: string]: ZonePerformance } = {};
-        
-        // Initialize all zones
-        zones.forEach((zone: any) => {
-          const zoneId = zone.id || zone.zone_id || zone.zoneId;
-          if (zoneId) {
-            zoneStats[zoneId] = {
-              zoneId,
-              totalCampaigns: 0,
-              activeCampaigns: 0,
-              inactiveCampaigns: 0,
-            };
-          }
-        });
-
-        // Count campaigns per zone
-        campaigns.forEach((campaign: any) => {
-          const zoneId = campaign.zone_id || campaign.zoneId;
-          if (zoneId && zoneStats[zoneId]) {
-            zoneStats[zoneId].totalCampaigns++;
-            if (campaign.active) {
-              zoneStats[zoneId].activeCampaigns++;
-            } else {
-              zoneStats[zoneId].inactiveCampaigns++;
-            }
-          }
-        });
-
-        setZonePerformance(Object.values(zoneStats));
       } catch (error) {
         console.error('Failed to load analytics metrics:', error);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
@@ -203,6 +167,13 @@ const AnalyticsPage = () => {
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
         Analytics Dashboard
       </Typography>
+
+      {/* Loading timeout error */}
+      {loadingTimeout && loading && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Loading taking longer than expected. Please check your connection.
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -303,7 +274,11 @@ const AnalyticsPage = () => {
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <MetricCard
               title="Click-Through Rate (CTR)"
-              value={`${notificationMetrics.ctr.toFixed(2)}%`}
+              value={
+                !isFinite(notificationMetrics.ctr) || isNaN(notificationMetrics.ctr)
+                  ? '0.00%'
+                  : `${(notificationMetrics.ctr * 100).toFixed(2)}%`
+              }
               icon={<CTRIcon sx={{ fontSize: 32, color: 'error.main' }} />}
               color="error.main"
               bgColor="background.default"
@@ -335,7 +310,14 @@ const AnalyticsPage = () => {
                 <YAxis />
                 <Tooltip 
                   formatter={(value: number) => value.toLocaleString()}
-                  contentStyle={{ borderRadius: 8 }}
+                  contentStyle={{ 
+                    borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    border: '1px solid #e0e0e0',
+                    padding: '12px',
+                    transform: 'translateY(-5px)',
+                  }}
+                  cursor={false}
                 />
                 <Legend />
                 <Bar dataKey="Triggered" fill="#1976d2" radius={[8, 8, 0, 0]} />
@@ -343,127 +325,15 @@ const AnalyticsPage = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}>
-              <Typography variant="body2" color="text.secondary">
-                No notification data available
-              </Typography>
+            <Box sx={{ height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <EmptyState
+                icon={<NotificationsIcon />}
+                title="No Notification Data"
+                description="Start creating campaigns to see notification engagement metrics here."
+              />
             </Box>
           )}
         </Paper>
-      </Box>
-
-      {/* Zone Performance Table */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
-          Zone Performance
-        </Typography>
-        <TableContainer component={Paper} elevation={2}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  Zone ID
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  Total Campaigns
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  Active
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  Inactive
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  Status
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={`skeleton-${index}`}>
-                    <TableCell><Skeleton variant="text" width="80%" /></TableCell>
-                    <TableCell align="center"><Skeleton variant="text" width={40} /></TableCell>
-                    <TableCell align="center"><Skeleton variant="rounded" width={50} height={24} /></TableCell>
-                    <TableCell align="center"><Skeleton variant="rounded" width={50} height={24} /></TableCell>
-                    <TableCell align="right"><Skeleton variant="rounded" width={70} height={24} /></TableCell>
-                  </TableRow>
-                ))
-              ) : zonePerformance.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No zones available
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                zonePerformance.map((zone) => (
-                  <TableRow
-                    key={zone.zoneId}
-                    sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
-                  >
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 500 }}>
-                        {zone.zoneId.length > 12
-                          ? `${zone.zoneId.substring(0, 12)}...`
-                          : zone.zoneId}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {zone.totalCampaigns}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={zone.activeCampaigns}
-                        size="small"
-                        color="success"
-                        sx={{
-                          fontWeight: 600,
-                          minWidth: 50,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={zone.inactiveCampaigns}
-                        size="small"
-                        color="warning"
-                        sx={{
-                          fontWeight: 600,
-                          minWidth: 50,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      {zone.totalCampaigns === 0 ? (
-                        <Chip
-                          label="No Campaigns"
-                          size="small"
-                          sx={{ color: 'text.secondary' }}
-                        />
-                      ) : zone.activeCampaigns > 0 ? (
-                        <Chip
-                          label="Active"
-                          size="small"
-                          color="success"
-                        />
-                      ) : (
-                        <Chip
-                          label="Inactive"
-                          size="small"
-                          sx={{ color: 'text.secondary' }}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
       </Box>
     </Box>
   );

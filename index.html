@@ -9,7 +9,10 @@
     <meta http-equiv="Content-Security-Policy" 
       content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+          https://apis.google.com 
+          https://accounts.google.com 
+          https://*.firebaseapp.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
         img-src 'self' data: https: blob:;
@@ -21,7 +24,7 @@
           https://securetoken.googleapis.com
           wss://*.firebaseio.com
           ws://localhost:*;
-        frame-src 'none';
+        frame-src https://accounts.google.com https://*.firebaseapp.com;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
@@ -30,6 +33,20 @@
     
     <title>GeoEngage Admin | Campaign Management Dashboard</title>
     <meta name="description" content="Admin dashboard for managing indoor location-based campaigns" />
+    
+    <!-- Global scrollbar hiding -->
+    <style>
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      
+      /* Hide scrollbar for IE, Edge and Firefox */
+      * {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

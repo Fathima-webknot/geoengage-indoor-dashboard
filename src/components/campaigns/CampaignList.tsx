@@ -19,18 +19,21 @@ import {
   PowerSettingsNew as ActivateIcon,
   Block as DeactivateIcon,
   Delete as DeleteIcon,
+  Login as EntryIcon,
+  Logout as ExitIcon,
 } from '@mui/icons-material';
+import { Campaign, CampaignTrigger } from '@/types/campaign.types';
 
 interface CampaignListProps {
-  campaigns: any[]; // Backend returns snake_case fields
+  campaigns: Campaign[];
   loading?: boolean;
-  actionLoading?: string | null; // ID of campaign currently being updated
-  onActivate?: (id: string) => void;
-  onDeactivate?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  actionLoading?: number | null; // ID of campaign currently being updated
+  onActivate?: (id: number) => void;
+  onDeactivate?: (id: number) => void;
+  onDelete?: (id: number) => void;
 }
 
-export const CampaignList: React.FC<CampaignListProps> = ({
+export const CampaignList: React.FC<CampaignListProps> = React.memo(({
   campaigns,
   loading = false,
   actionLoading = null,
@@ -38,21 +41,15 @@ export const CampaignList: React.FC<CampaignListProps> = ({
   onDeactivate,
   onDelete,
 }) => {
-  // Debug: Log first campaign to see backend structure
-  React.useEffect(() => {
-    if (campaigns.length > 0) {
-      console.group('📋 Backend Campaign Structure');
-      console.log('First campaign:', campaigns[0]);
-      console.log('Available fields:', Object.keys(campaigns[0]));
-      console.log('Name field value:', campaigns[0].name);
-      console.log('All name-like fields:', {
-        name: campaigns[0].name,
-        campaign_name: campaigns[0].campaign_name,
-        title: campaigns[0].title,
-      });
-      console.groupEnd();
-    }
-  }, [campaigns]);
+  // Helper function to get trigger label
+  const getTriggerLabel = (trigger: CampaignTrigger) => {
+    return trigger === CampaignTrigger.ZONE_ENTRY ? 'Entry' : 'Exit';
+  };
+
+  // Helper function to get trigger color
+  const getTriggerColor = (trigger: CampaignTrigger) => {
+    return trigger === CampaignTrigger.ZONE_ENTRY ? 'primary' : 'secondary';
+  };
 
   // Skeleton loader rows
   const renderSkeletonRows = () => {
@@ -63,6 +60,9 @@ export const CampaignList: React.FC<CampaignListProps> = ({
         </TableCell>
         <TableCell>
           <Skeleton variant="text" width="80%" />
+        </TableCell>
+        <TableCell>
+          <Skeleton variant="rounded" width={90} height={24} />
         </TableCell>
         <TableCell>
           <Skeleton variant="text" width="60%" />
@@ -96,6 +96,9 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                 Campaign
               </TableCell>
               <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                Trigger
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
                 Zone
               </TableCell>
               <TableCell sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }}>
@@ -111,7 +114,7 @@ export const CampaignList: React.FC<CampaignListProps> = ({
               renderSkeletonRows()
             ) : campaigns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <Typography variant="body1" color="text.secondary">
                     No campaigns yet. Create your first campaign above!
                   </Typography>
@@ -119,7 +122,6 @@ export const CampaignList: React.FC<CampaignListProps> = ({
               </TableRow>
             ) : (
               campaigns.map((campaign) => {
-              // Backend returns: id, zone_id, message, active, created_at
               const isActive = campaign.active || false;
               const status = isActive ? 'Active' : 'Inactive';
               
@@ -127,7 +129,12 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                 <TableRow
                   key={campaign.id}
                   sx={{
-                    '&:hover': { backgroundColor: '#fafafa' },
+                    transition: 'all 0.2s ease',
+                    '&:hover': { 
+                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                      transform: 'translateX(4px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    },
                   }}
                 >
                   <TableCell>
@@ -145,16 +152,25 @@ export const CampaignList: React.FC<CampaignListProps> = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      Campaign #{campaign.id}
+                      {campaign.name || `Campaign #${campaign.id}`}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {campaign.zone_id ? campaign.zone_id.substring(0, 8) + '...' : 'N/A'}
-                    </Typography>
+                    <Chip
+                      icon={campaign.trigger === CampaignTrigger.ZONE_ENTRY ? <EntryIcon /> : <ExitIcon />}
+                      label={getTriggerLabel(campaign.trigger)}
+                      size="small"
+                      color={getTriggerColor(campaign.trigger)}
+                      variant="outlined"
+                    />
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
+                      {campaign.zone_name || 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
                       {campaign.message || 'No message'}
                     </Typography>
                   </TableCell>
@@ -224,4 +240,4 @@ export const CampaignList: React.FC<CampaignListProps> = ({
       </TableContainer>
     </Box>
   );
-};
+});

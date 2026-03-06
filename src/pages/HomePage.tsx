@@ -11,17 +11,36 @@ import {
   Speed as SpeedIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
+import GELogo from '@/components/common/GELogo';
+
+// Colors matching the splash screen
+const COLORS = {
+  gradientStart: '#0F172A',
+  gradientEnd: '#1E293B',
+  purple: '#8B5CF6',
+  cyan: '#06B6D4',
+  textGray: '#94A3B8',
+};
 
 /**
  * HomePage (Login Page)
- * Shows login UI if not authenticated
- * Redirects to /campaigns if already authenticated
+ * Shows split-screen: animated splash on left, sign-in on right
+ * Features section below
  */
 const HomePage = () => {
-  const { currentUser, login, error } = useAuth();
+  const { currentUser, login, error, clearError, verifying } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [splashComplete, setSplashComplete] = useState(false);
   const navigate = useNavigate();
+
+  // Transition to split-screen after splash animation completes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSplashComplete(true);
+    }, 2800); // Wait for splash animation to complete (logo + text + tagline)
+    return () => clearTimeout(timer);
+  }, []);
 
   // Redirect to campaigns if already logged in
   useEffect(() => {
@@ -51,6 +70,7 @@ const HomePage = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
+    clearError(); // Clear error from AuthContext when snackbar is dismissed
   };
 
   // Don't render anything if user is already logged in (will redirect)
@@ -91,13 +111,40 @@ const HomePage = () => {
     },
   ];
 
+  // Particle positions for animated splash - reduced for cleaner look
+  const particlePositions = [
+    { left: '15%', top: '25%', size: 5 },
+    { left: '85%', top: '30%', size: 6 },
+    { left: '20%', top: '70%', size: 4 },
+    { left: '40%', top: '15%', size: 5 },
+    { left: '65%', top: '75%', size: 4 },
+    { left: '10%', top: '55%', size: 6 },
+    { left: '90%', top: '60%', size: 5 },
+    { left: '50%', top: '40%', size: 4 },
+    { left: '75%', top: '20%', size: 5 },
+    { left: '30%', top: '85%', size: 6 },
+    { left: '55%', top: '10%', size: 4 },
+    { left: '8%', top: '38%', size: 5 },
+    { left: '92%', top: '78%', size: 6 },
+    { left: '45%', top: '65%', size: 4 },
+    { left: '72%', top: '45%', size: 5 },
+    { left: '28%', top: '52%', size: 4 },
+    { left: '62%', top: '88%', size: 6 },
+    { left: '18%', top: '12%', size: 5 },
+  ];
+
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        background: `linear-gradient(135deg, ${COLORS.gradientStart} 0%, ${COLORS.gradientEnd} 100%)`,
         position: 'relative',
         overflow: 'auto',
+        // Hide scrollbar
+        scrollbarWidth: 'none', // Firefox
+        '&::-webkit-scrollbar': {
+          display: 'none', // Chrome, Safari, Edge
+        },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -105,76 +152,219 @@ const HomePage = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.08) 0%, transparent 40%)
+          `,
           pointerEvents: 'none',
         },
       }}
     >
-      <Container maxWidth="lg" sx={{ py: 8, position: 'relative', zIndex: 1 }}>
-        {/* Branding Section */}
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 800,
-              background: 'linear-gradient(45deg, #3b82f6 30%, #8b5cf6 90%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 2,
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-            }}
+      <style>
+        {`
+          @keyframes splashLogoEnter {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          @keyframes splashFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+          }
+          @keyframes splashParticleFloat {
+            0%, 100% { transform: translateY(0); opacity: 0; }
+            50% { transform: translateY(-30px); opacity: 0.2; }
+          }
+          @keyframes popFromCenter {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          
+          .splash-logo-container {
+            animation: splashLogoEnter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            margin-bottom: 20px;
+          }
+          
+          .splash-text-container {
+            opacity: 0;
+            animation: splashFadeIn 0.6s ease-out 1.0s forwards;
+            display: flex;
+            flex-direction: row;
+            margin-top: 10px;
+          }
+          
+          .splash-tagline-container {
+            opacity: 0;
+            animation: splashFadeIn 0.6s ease-out 1.6s forwards;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .splash-particle {
+            position: absolute;
+            background-color: ${COLORS.cyan};
+            border-radius: 50%;
+            opacity: 0;
+          }
+        `}
+      </style>
+
+      {/* Hero Section - Centered then Split Screen */}
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          position: 'relative',
+        }}
+      >
+        {/* Left Side / Center - Animated Splash */}
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            minHeight: { xs: '50vh', md: '100vh' },
+            p: 4,
+            marginRight: { md: splashComplete ? 0 : 'auto' },
+            marginLeft: { md: splashComplete ? 0 : 'auto' },
+            maxWidth: { md: splashComplete ? '50%' : '100%' },
+            transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              width: '400px',
+              height: '400px',
+              borderRadius: '50%',
+              background: `radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)`,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            },
+          }}
+        >
+          {/* Floating particles */}
+          {particlePositions.map((pos, index) => (
+            <div
+              key={index}
+              className="splash-particle"
+              style={{
+                left: pos.left,
+                top: pos.top,
+                width: `${pos.size}px`,
+                height: `${pos.size}px`,
+                animation: `splashParticleFloat 4s ease-in-out infinite ${index * 0.2}s`,
+              }}
+            />
+          ))}
+
+          {/* Main content */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
+            {/* Animated logo */}
+            <div className="splash-logo-container">
+              <GELogo size={180} animated={true} showText={false} />
+            </div>
+
+            {/* App name with color split */}
+            <div className="splash-text-container">
+              <span style={{ fontSize: '48px', fontWeight: 'bold', color: COLORS.purple, letterSpacing: '1px' }}>
+                Geo
+              </span>
+              <span style={{ fontSize: '48px', fontWeight: 'bold', color: COLORS.cyan, letterSpacing: '1px' }}>
+                Engage
+              </span>
+            </div>
+
+            {/* Tagline */}
+            <div className="splash-tagline-container">
+              <div style={{ fontSize: '18px', color: COLORS.textGray, marginTop: '12px', letterSpacing: '0.5px', textAlign: 'center' }}>
+                Navigate Indoors. Discover More.
+              </div>
+            </div>
+          </Box>
+
+          {/* Bottom accent line */}
+          <Box 
+            className="splash-tagline-container"
+            sx={{ position: 'absolute', bottom: '60px', width: '60%', display: 'flex', justifyContent: 'center' }}
           >
-            GeoEngage
-          </Typography>
-          <Typography
-            variant="h5"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 500,
-              mb: 2,
-            }}
-          >
-            Indoor Location-Based Campaign Management Platform
-          </Typography>
+            <Box sx={{
+              height: '3px',
+              width: '100%',
+              borderRadius: '2px',
+              background: `linear-gradient(to right, ${COLORS.purple}, ${COLORS.cyan})`
+            }} />
+          </Box>
         </Box>
 
-        {/* Sign In Card */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 8 }}>
+        {/* Right Side - Sign In Card */}
+        <Box
+          sx={{
+            flex: 1,
+            display: splashComplete ? 'flex' : 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: { xs: '50vh', md: '100vh' },
+            p: 4,
+            position: 'relative',
+            opacity: splashComplete ? 1 : 0,
+            transform: splashComplete ? 'scale(1)' : 'scale(0.8)',
+            transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              width: '300px',
+              height: '300px',
+              borderRadius: '50%',
+              background: `radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%)`,
+              top: '20%',
+              right: '10%',
+              pointerEvents: 'none',
+            },
+          }}
+        >
           <Paper
             elevation={8}
             sx={{
-              p: 5,
+              p: 7,
               width: '100%',
-              maxWidth: 480,
+              maxWidth: 600,
               textAlign: 'center',
               borderRadius: 4,
-              backgroundColor: 'background.paper',
+              background: `linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%)`,
+              backdropFilter: 'blur(10px)',
               border: '1px solid',
-              borderColor: 'primary.main',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+              borderColor: 'rgba(139, 92, 246, 0.3)',
+              boxShadow: `0 20px 60px ${COLORS.purple}55`,
             }}
           >
             <Box
               sx={{
-                width: 80,
-                height: 80,
+                width: 100,
+                height: 100,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                background: `linear-gradient(135deg, ${COLORS.purple} 0%, ${COLORS.cyan} 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
-                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                boxShadow: `0 8px 24px ${COLORS.purple}66`,
               }}
             >
-              <SecurityIcon sx={{ fontSize: 48, color: 'white' }} />
+              <SecurityIcon sx={{ fontSize: 56, color: 'white' }} />
             </Box>
 
             <Typography
-              variant="h4"
+              variant="h3"
               sx={{
                 fontWeight: 700,
-                mb: 1,
+                mb: 2,
                 color: 'text.primary',
               }}
             >
@@ -186,6 +376,7 @@ const HomePage = () => {
               sx={{
                 color: 'text.secondary',
                 mb: 4,
+                fontSize: '1.1rem',
               }}
             >
               Sign in to access your admin dashboard
@@ -198,9 +389,10 @@ const HomePage = () => {
                 sx={{
                   p: 3,
                   borderRadius: 2,
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  background: `linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%)`,
+                  backdropFilter: 'blur(5px)',
                   border: '1px solid',
-                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                  borderColor: 'rgba(139, 92, 246, 0.4)',
                 }}
               >
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
@@ -217,18 +409,18 @@ const HomePage = () => {
                     py: 1.5,
                     fontSize: '1rem',
                     fontWeight: 600,
-                    background: 'linear-gradient(45deg, #3b82f6 30%, #8b5cf6 90%)',
-                    boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
+                    background: `linear-gradient(45deg, ${COLORS.purple} 30%, ${COLORS.cyan} 90%)`,
+                    boxShadow: `0 4px 20px ${COLORS.purple}66`,
                     '&:hover': {
-                      background: 'linear-gradient(45deg, #2563eb 30%, #7c3aed 90%)',
-                      boxShadow: '0 6px 24px rgba(59, 130, 246, 0.6)',
+                      background: `linear-gradient(45deg, #7c3aed 30%, #0891b2 90%)`,
+                      boxShadow: `0 6px 24px ${COLORS.cyan}99`,
                     },
                     '&:disabled': {
                       background: 'rgba(100, 116, 139, 0.5)',
                     },
                   }}
                 >
-                  {signingIn ? 'Signing in...' : 'Sign In with Google'}
+                  {verifying ? 'Verifying admin access...' : signingIn ? 'Signing in...' : 'Sign In with Google'}
                 </Button>
               </Box>
 
@@ -243,8 +435,10 @@ const HomePage = () => {
             </Stack>
           </Paper>
         </Box>
+      </Box>
 
-        {/* Features Section */}
+      {/* Features Section - Scroll Down */}
+      <Container maxWidth="lg" sx={{ py: 8, position: 'relative', zIndex: 1 }}>
         <Box sx={{ mb: 6 }}>
           <Typography
             variant="h4"
@@ -283,14 +477,14 @@ const HomePage = () => {
                     backgroundColor: 'rgba(30, 41, 59, 0.6)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid',
-                    borderColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: 'rgba(139, 92, 246, 0.2)',
                     borderRadius: 2,
                     transition: 'all 0.3s ease',
                     textAlign: 'center',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      borderColor: 'primary.main',
-                      boxShadow: '0 8px 24px rgba(59, 130, 246, 0.2)',
+                      borderColor: COLORS.cyan,
+                      boxShadow: `0 8px 24px ${COLORS.cyan}33`,
                     },
                   }}
                 >
