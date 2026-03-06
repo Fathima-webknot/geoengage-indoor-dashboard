@@ -27,7 +27,7 @@ export interface Campaign {
 export interface CreateCampaignRequest {
   zone_id: string;
   message: string;
-  name?: string;
+  name: string;
   trigger?: CampaignTrigger;
 }
 

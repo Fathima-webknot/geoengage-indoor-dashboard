@@ -54,8 +54,10 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   const validateForm = () => {
     const newErrors: typeof errors = {};
 
-    // Campaign name validation (optional but if provided, must be at least 3 chars)
-    if (campaignName.trim() && campaignName.trim().length < 3) {
+    // Campaign name validation
+    if (!campaignName.trim()) {
+      newErrors.campaignName = 'Campaign name is required';
+    } else if (campaignName.trim().length < 3) {
       newErrors.campaignName = 'Campaign name must be at least 3 characters';
     }
 
@@ -145,7 +147,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         zone_id: selectedZone,
         message: notificationMessage,
         trigger: triggerType,
-        ...(campaignName.trim() && { name: campaignName }), // Only include name if provided
+        name: campaignName.trim(),
       };
 
       console.group('📤 Creating Campaign');
@@ -209,10 +211,11 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
-          {/* Campaign Name (Optional) */}
+          {/* Campaign Name */}
           <TextField
+            required
             fullWidth
-            label="Campaign Name (Optional)"
+            label="Campaign Name"
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
             onBlur={() => setTouched({ ...touched, campaignName: true })}
@@ -260,13 +263,13 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                   Zone Entry
                 </MenuItem>
                 <MenuItem value={CampaignTrigger.ZONE_EXIT_NO_TXN}>
-                  Zone Exit (No Transaction)
+                  Zone Exit
                 </MenuItem>
               </Select>
               <FormHelperText>
                 {triggerType === CampaignTrigger.ZONE_ENTRY 
                   ? 'Campaign triggers when user enters the zone' 
-                  : 'Campaign triggers when user exits without making a transaction'}
+                  : 'Campaign triggers when user exits the zone'}
               </FormHelperText>
             </FormControl>
           </Stack>

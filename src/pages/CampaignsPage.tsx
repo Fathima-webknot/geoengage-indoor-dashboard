@@ -340,7 +340,7 @@ const CampaignsPage = () => {
               Entry ({entryCount})
             </ToggleButton>
             <ToggleButton value={CampaignTrigger.ZONE_EXIT_NO_TXN} aria-label="exit campaigns">
-              Exit No Txn ({exitCount})
+              Exit ({exitCount})
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>

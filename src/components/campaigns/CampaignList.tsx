@@ -43,7 +43,7 @@ export const CampaignList: React.FC<CampaignListProps> = React.memo(({
 }) => {
   // Helper function to get trigger label
   const getTriggerLabel = (trigger: CampaignTrigger) => {
-    return trigger === CampaignTrigger.ZONE_ENTRY ? 'Entry' : 'Exit (No Txn)';
+    return trigger === CampaignTrigger.ZONE_ENTRY ? 'Entry' : 'Exit';
   };
 
   // Helper function to get trigger color
