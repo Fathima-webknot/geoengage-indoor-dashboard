@@ -317,7 +317,7 @@ const AnalyticsPage = () => {
                     padding: '12px',
                     transform: 'translateY(-5px)',
                   }}
-                  cursor={{ fill: 'rgba(33, 150, 243, 0.1)' }}
+                  cursor={false}
                 />
                 <Legend />
                 <Bar dataKey="Triggered" fill="#1976d2" radius={[8, 8, 0, 0]} />

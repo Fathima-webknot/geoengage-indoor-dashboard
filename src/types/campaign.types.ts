@@ -1,68 +1,50 @@
-export enum CampaignStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
+/**
+ * Trigger types for campaigns
+ */
+export enum CampaignTrigger {
+  ZONE_ENTRY = 'zone_entry',
+  ZONE_EXIT_NO_TXN = 'zone_exit_no_txn',
 }
 
-export enum CampaignType {
-  PROMOTIONAL = 'promotional',
-  INFORMATIONAL = 'informational',
-  NAVIGATIONAL = 'navigational',
-  EMERGENCY = 'emergency',
-}
-
+/**
+ * Campaign model as returned by backend API
+ */
 export interface Campaign {
-  id: string;
-  name: string;
-  description: string;
-  type: CampaignType;
-  status: CampaignStatus;
-  contentTitle: string;
-  contentMessage: string;
-  contentImageUrl?: string;
-  contentActionUrl?: string;
-  contentActionText?: string;
-  zoneIds: string[];
-  startDate: string;
-  endDate?: string;
-  isActive: boolean;
-  impressions: number;
-  clicks: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  zone_id: string;
+  message: string;
+  name?: string | null;
+  active: boolean;
+  trigger: CampaignTrigger;
+  created_at: string;
+  // Client-side enriched field (not from API)
+  zone_name?: string;
 }
 
+/**
+ * Request payload for creating a new campaign
+ */
 export interface CreateCampaignRequest {
-  name: string;
-  description: string;
-  type: CampaignType;
-  contentTitle: string;
-  contentMessage: string;
-  contentImageUrl?: string;
-  contentActionUrl?: string;
-  contentActionText?: string;
-  zoneIds: string[];
-  startDate: string;
-  endDate?: string;
+  zone_id: string;
+  message: string;
+  name?: string;
+  trigger?: CampaignTrigger;
 }
 
-export interface UpdateCampaignRequest extends Partial<CreateCampaignRequest> {
-  status?: CampaignStatus;
-  isActive?: boolean;
+/**
+ * Request payload for updating a campaign
+ */
+export interface UpdateCampaignRequest {
+  active?: boolean;
+  message?: string;
+  name?: string;
+  trigger?: CampaignTrigger;
 }
 
-export interface CampaignListResponse {
-  campaigns: Campaign[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
+/**
+ * Query filters for listing campaigns
+ */
 export interface CampaignFilters {
-  status?: CampaignStatus;
-  type?: CampaignType;
-  search?: string;
-  page?: number;
-  pageSize?: number;
+  zone_id?: string;
+  trigger?: CampaignTrigger;
 }

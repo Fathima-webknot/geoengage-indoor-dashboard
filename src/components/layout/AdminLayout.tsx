@@ -273,11 +273,8 @@ export const AdminLayout: React.FC = () => {
                 cursor: 'pointer',
                 px: 2,
                 py: 1.5,
-                borderRadius: 0,
+                borderRadius: 2,
                 height: 'fit-content',
-                '&:hover': {
-                  backgroundColor: '#334155',
-                },
               }}
             >
               <Typography 
@@ -291,12 +288,12 @@ export const AdminLayout: React.FC = () => {
                 {currentUser?.displayName || currentUser?.email}
               </Typography>
               <img
-                src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.displayName || currentUser?.email || 'U')}&background=2196f3&color=fff&size=36&rounded=false`}
+                src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.displayName || currentUser?.email || 'U')}&background=2196f3&color=fff&size=36&bold=true&length=1`}
                 alt={currentUser?.displayName || 'Profile'}
                 style={{
                   width: '36px',
                   height: '36px',
-                  borderRadius: '0',
+                  borderRadius: '50%',
                   objectFit: 'cover',
                   display: 'block',
                 }}

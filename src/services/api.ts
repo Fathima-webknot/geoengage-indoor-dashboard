@@ -5,7 +5,7 @@ import { auth } from '../config/firebase';
  * Base API URL from environment variables
  * Default to localhost if not configured
  */
-let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 // Remove trailing slash if present
 if (API_BASE_URL.endsWith('/')) {
   API_BASE_URL = API_BASE_URL.slice(0, -1);

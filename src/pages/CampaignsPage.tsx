@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { Box, Typography, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Stack } from '@mui/material';
 import { Campaign as CampaignIcon } from '@mui/icons-material';
 import { CreateCampaignForm } from '@/components/campaigns/CreateCampaignForm';
 import { CampaignList } from '@/components/campaigns/CampaignList';
 import { EmptyState } from '@/components/EmptyState';
-import { Campaign } from '@/types/campaign.types';
+import { Campaign, CampaignTrigger } from '@/types/campaign.types';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
 import { getErrorMessage, getSuccessMessage } from '@/utils/errorMessages';
@@ -17,8 +17,9 @@ const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [triggerFilter, setTriggerFilter] = useState<CampaignTrigger | 'all'>('all');
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -26,7 +27,7 @@ const CampaignsPage = () => {
   }>({ open: false, message: '', severity: 'info' });
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    campaignId: string | null;
+    campaignId: number | null;
   }>({ open: false, campaignId: null });
 
   const loadCampaigns = async () => {
@@ -48,15 +49,8 @@ const CampaignsPage = () => {
       console.log('📋 Campaigns API response:', campaignsResponse);
       console.log('🗺️ Zones API response:', zonesResponse);
       
-      // Handle different response formats for campaigns
-      let campaignsData: any[] = [];
-      if (Array.isArray(campaignsResponse)) {
-        campaignsData = campaignsResponse;
-      } else if (campaignsResponse && Array.isArray(campaignsResponse.campaigns)) {
-        campaignsData = campaignsResponse.campaigns;
-      } else if (campaignsResponse && campaignsResponse.data && Array.isArray(campaignsResponse.data)) {
-        campaignsData = campaignsResponse.data;
-      }
+      // Backend now returns array directly
+      const campaignsData = Array.isArray(campaignsResponse) ? campaignsResponse : [];
       
       // Handle different response formats for zones
       let zonesData: any[] = [];
@@ -79,28 +73,56 @@ const CampaignsPage = () => {
       });
       
       // Enrich campaigns with zone names
-      const enrichedCampaigns = campaignsData.map((campaign: any) => {
-        const zoneId = campaign.zone_id || campaign.zoneId;
-        return {
-          ...campaign,
-          zone_name: zoneId ? zoneMap.get(zoneId) || 'Unknown Zone' : null,
-        };
-      });
+      const enrichedCampaigns = campaignsData.map((campaign: Campaign) => ({
+        ...campaign,
+        zone_name: zoneMap.get(campaign.zone_id) || 'Unknown Zone',
+      }));
       
-      console.log('📊 Parsed campaigns:', enrichedCampaigns.map(c => ({ id: c.id, active: c.active, zone_name: c.zone_name })));
+      console.log('📊 Parsed campaigns:', enrichedCampaigns.map(c => ({ 
+        id: c.id, 
+        name: c.name,
+        active: c.active, 
+        trigger: c.trigger,
+        zone_name: c.zone_name 
+      })));
       
-      // Sort campaigns: Active first, then Inactive
+      // Sort campaigns: Active first, then by trigger type
       const sortedCampaigns = enrichedCampaigns.sort((a, b) => {
-        // Active campaigns (true) come before inactive (false)
-        if (a.active === b.active) return 0;
-        return a.active ? -1 : 1;
+        // Active campaigns come before inactive
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        // Then sort by trigger type
+        if (a.trigger !== b.trigger) return a.trigger === CampaignTrigger.ZONE_ENTRY ? -1 : 1;
+        return 0;
       });
       
-      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ id: c.id, active: c.active, zone_name: c.zone_name })));
+      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ 
+        id: c.id, 
+        name: c.name,
+        active: c.active, 
+        trigger: c.trigger,
+        zone_name: c.zone_name 
+      })));
       setCampaigns(sortedCampaigns);
     } catch (error: any) {
-      console.error('Failed to load campaigns:', error);
+      console.error('❌ Failed to load campaigns:', error);
       console.error('Error details:', error.response?.data);
+      
+      // Check if it's a 500 error
+      if (error.response?.status === 500) {
+        console.error('🔥 Backend 500 error - check backend server logs');
+        console.error('Backend error message:', error.response?.data?.message || error.response?.data?.error || 'No error message provided');
+      }
+      
+      // Set empty campaigns array so UI doesn't crash
+      setCampaigns([]);
+      
+      setSnackbar({
+        open: true,
+        message: error.response?.status === 500 
+          ? 'Backend server error. Please check if the campaigns table exists in the database.'
+          : getErrorMessage(error),
+        severity: 'error',
+      });
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
@@ -116,12 +138,12 @@ const CampaignsPage = () => {
     loadCampaigns();
   };
 
-  const handleActivate = async (id: string) => {
+  const handleActivate = async (id: number) => {
     setActionLoading(id);
     try {
       console.group('🟢 ACTIVATING CAMPAIGN');
       console.log('Campaign ID to activate:', id);
-      console.log('Current active campaigns:', campaigns.filter(c => c.active).map(c => ({ id: c.id, message: c.message })));
+      console.log('Current active campaigns:', campaigns.filter(c => c.active).map(c => ({ id: c.id, name: c.name, message: c.message })));
       console.log('Total active count BEFORE:', campaigns.filter(c => c.active).length);
       
       const result = await campaignService.activateCampaign(id);
@@ -149,7 +171,7 @@ const CampaignsPage = () => {
     }
   };
 
-  const handleDeactivate = async (id: string) => {
+  const handleDeactivate = async (id: number) => {
     setActionLoading(id);
     try {
       console.log('🔴 Deactivating campaign ID:', id);
@@ -173,7 +195,7 @@ const CampaignsPage = () => {
     }
   };
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id: number) => {
     setDeleteDialog({ open: true, campaignId: id });
   };
 
@@ -219,19 +241,40 @@ const CampaignsPage = () => {
     }
   };
 
-  // Filter campaigns based on selected status (memoized to prevent re-renders)
+  const handleTriggerFilterChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newFilter: CampaignTrigger | 'all' | null,
+  ) => {
+    if (newFilter !== null) {
+      setTriggerFilter(newFilter);
+    }
+  };
+
+  // Filter campaigns based on selected status and trigger (memoized to prevent re-renders)
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
-      if (statusFilter === 'all') return true;
-      if (statusFilter === 'active') return campaign.active === true;
-      if (statusFilter === 'inactive') return campaign.active === false;
+      // Status filter
+      if (statusFilter === 'active' && !campaign.active) return false;
+      if (statusFilter === 'inactive' && campaign.active) return false;
+      
+      // Trigger filter
+      if (triggerFilter !== 'all' && campaign.trigger !== triggerFilter) return false;
+      
       return true;
     });
-  }, [campaigns, statusFilter]);
+  }, [campaigns, statusFilter, triggerFilter]);
 
-  // Count active campaigns (memoized)
+  // Count campaigns by status and trigger (memoized)
   const activeCount = useMemo(() => {
     return campaigns.filter(c => c.active).length;
+  }, [campaigns]);
+
+  const entryCount = useMemo(() => {
+    return campaigns.filter(c => c.trigger === CampaignTrigger.ZONE_ENTRY).length;
+  }, [campaigns]);
+
+  const exitCount = useMemo(() => {
+    return campaigns.filter(c => c.trigger === CampaignTrigger.ZONE_EXIT_NO_TXN).length;
   }, [campaigns]);
 
   return (
@@ -244,41 +287,71 @@ const CampaignsPage = () => {
 
       {/* Active Campaign Count Warning */}
       {activeCount >= 3 && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
+        <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">
             <strong>Note:</strong> You currently have <strong>{activeCount} active campaigns</strong>. 
-            Your backend may have a limit on concurrent active campaigns. If you activate another campaign, 
-            one of the existing active campaigns may be automatically deactivated.
+            You can have one active campaign per zone per trigger type (Entry or Exit).
           </Typography>
         </Alert>
       )}
 
-      {/* Status Filter Toggle Buttons */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography variant="body1" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-          Filter by status:
-        </Typography>
-        <ToggleButtonGroup
-          value={statusFilter}
-          exclusive
-          onChange={handleStatusFilterChange}
-          aria-label="campaign status filter"
-          size="small"
-        >
-          <ToggleButton value="all" aria-label="all campaigns">
-            All
-          </ToggleButton>
-          <ToggleButton value="active" aria-label="active campaigns">
-            Active
-          </ToggleButton>
-          <ToggleButton value="inactive" aria-label="inactive campaigns">
-            Inactive
-          </ToggleButton>
-        </ToggleButtonGroup>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          ({filteredCampaigns.length} {filteredCampaigns.length === 1 ? 'campaign' : 'campaigns'})
-        </Typography>
-      </Box>
+      {/* Filter Controls */}
+      <Stack spacing={3} sx={{ mb: 3 }}>
+        {/* Status Filter */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body1" sx={{ fontWeight: 500, color: 'text.secondary', minWidth: 100 }}>
+            Status:
+          </Typography>
+          <ToggleButtonGroup
+            value={statusFilter}
+            exclusive
+            onChange={handleStatusFilterChange}
+            aria-label="campaign status filter"
+            size="small"
+          >
+            <ToggleButton value="all" aria-label="all campaigns">
+              All
+            </ToggleButton>
+            <ToggleButton value="active" aria-label="active campaigns">
+              Active
+            </ToggleButton>
+            <ToggleButton value="inactive" aria-label="inactive campaigns">
+              Inactive
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Trigger Filter */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body1" sx={{ fontWeight: 500, color: 'text.secondary', minWidth: 100 }}>
+            Trigger Type:
+          </Typography>
+          <ToggleButtonGroup
+            value={triggerFilter}
+            exclusive
+            onChange={handleTriggerFilterChange}
+            aria-label="campaign trigger filter"
+            size="small"
+          >
+            <ToggleButton value="all" aria-label="all triggers">
+              All ({campaigns.length})
+            </ToggleButton>
+            <ToggleButton value={CampaignTrigger.ZONE_ENTRY} aria-label="entry campaigns">
+              Entry ({entryCount})
+            </ToggleButton>
+            <ToggleButton value={CampaignTrigger.ZONE_EXIT_NO_TXN} aria-label="exit campaigns">
+              Exit No Txn ({exitCount})
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Results count */}
+        <Box>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Showing <strong>{filteredCampaigns.length}</strong> {filteredCampaigns.length === 1 ? 'campaign' : 'campaigns'}
+          </Typography>
+        </Box>
+      </Stack>
 
       {/* Show loading timeout error */}
       {loadingTimeout && loading && (
