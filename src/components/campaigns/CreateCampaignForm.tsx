@@ -210,7 +210,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
       )}
 
       <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={2}>
+        <Stack spacing={3}>
           {/* Campaign Name */}
           <TextField
             required
@@ -286,15 +286,24 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             onBlur={() => setTouched({ ...touched, notificationMessage: true })}
             placeholder="Enter the push notification text..."
             error={touched.notificationMessage && !!errors.notificationMessage}
+            inputProps={{ maxLength: MAX_MESSAGE_LENGTH }}
             helperText={
               touched.notificationMessage && errors.notificationMessage
                 ? errors.notificationMessage
-                : `${notificationMessage.length}/${MAX_MESSAGE_LENGTH} characters ${notificationMessage.length < MIN_MESSAGE_LENGTH ? `(min ${MIN_MESSAGE_LENGTH})` : ''}`
+                : `${notificationMessage.length}/${MAX_MESSAGE_LENGTH} characters${notificationMessage.length < MIN_MESSAGE_LENGTH ? ` (minimum ${MIN_MESSAGE_LENGTH})` : ''}`
             }
+            FormHelperTextProps={{
+              sx: { 
+                mx: 0,
+                mt: 0.5,
+                wordBreak: 'break-word',
+                whiteSpace: 'normal'
+              }
+            }}
           />
 
           {/* Submit Button */}
-          <Box>
+          <Box sx={{ pt: 1 }}>
             <Button
               type="submit"
               variant="contained"

@@ -82,13 +82,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setError(null);
         return true;
       } else {
-        setError('Access denied. You need admin permissions to access this dashboard.');
+        setError('Access denied. You are not authorized to access this dashboard.');
         await signOut(auth);
         return false;
       }
     } catch (error: any) {
       console.error('Admin verification failed:', error);
-      setError(error.response?.data?.message || 'Failed to verify admin status');
+      
+      // Check if it's a 403 Forbidden error (non-admin user)
+      if (error.response?.status === 403) {
+        setError('Access denied. You are not authorized to access this dashboard.');
+      } else if (error.response?.status === 401) {
+        setError('Authentication failed. Please try logging in again.');
+      } else {
+        // Network error or other server issues
+        setError(error.response?.data?.message || 'Failed to verify admin status. Please try again.');
+      }
+      
       await signOut(auth);
       return false;
     }
