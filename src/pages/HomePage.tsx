@@ -32,6 +32,8 @@ const HomePage = () => {
   const [signingIn, setSigningIn] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [splashComplete, setSplashComplete] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderTimer, setReminderTimer] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   // Transition to split-screen after splash animation completes
@@ -57,14 +59,42 @@ const HomePage = () => {
     }
   }, [error]);
 
+  // Cleanup reminder timer on unmount
+  useEffect(() => {
+    return () => {
+      if (reminderTimer) {
+        clearTimeout(reminderTimer);
+      }
+    };
+  }, [reminderTimer]);
+
   const handleLogin = async () => {
     setSigningIn(true);
+    setReminderOpen(false); // Close any existing reminder
+    
+    // Set a reminder after 15 seconds if login is still pending
+    const timer = setTimeout(() => {
+      if (signingIn) {
+        setReminderOpen(true);
+      }
+    }, 15000); // 15 seconds
+    setReminderTimer(timer);
+    
     try {
       await login();
       // Navigation will happen via useEffect after currentUser is set
     } catch (error) {
       console.error('Login failed:', error);
+    } finally {
+      // Clear reminder timer
+      if (reminderTimer) {
+        clearTimeout(reminderTimer);
+        setReminderTimer(null);
+      }
+      // Always reset loading state when login completes
+      // (whether successful, cancelled, or failed)
       setSigningIn(false);
+      setReminderOpen(false);
     }
   };
 
@@ -519,6 +549,26 @@ const HomePage = () => {
           }}
         >
           {error}
+        </Alert>
+      </Snackbar>
+
+      {/* Reminder Snackbar - shown after 15 seconds if login popup is still open */}
+      <Snackbar
+        open={reminderOpen}
+        autoHideDuration={10000}
+        onClose={() => setReminderOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setReminderOpen(false)}
+          severity="info"
+          sx={{
+            width: '100%',
+            backgroundColor: 'info.main',
+            color: 'white',
+          }}
+        >
+          Please complete the Google sign-in in the popup window. If you don't see it, check for a minimized window or try again.
         </Alert>
       </Snackbar>
     </Box>

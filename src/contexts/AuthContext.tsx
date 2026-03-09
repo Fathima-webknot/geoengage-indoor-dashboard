@@ -56,6 +56,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [error, setError] = useState<string | null>(null);
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Timeout duration for login popup (30 seconds)
+  const LOGIN_TIMEOUT_MS = 30000;
 
   /**
    * Verify if user is admin
@@ -94,6 +98,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    * Login with Google using Firebase popup
    */
   const login = async (): Promise<void> => {
+    // Clear any existing timeout
+    if (loginTimeout) {
+      clearTimeout(loginTimeout);
+      setLoginTimeout(null);
+    }
+
     try {
       // Clear any previous errors on new login attempt
       setError(null);
@@ -103,7 +113,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const controller = new AbortController();
       setAbortController(controller);
       
-      const result = await signInWithPopup(auth, googleProvider);
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('LOGIN_TIMEOUT'));
+        }, LOGIN_TIMEOUT_MS);
+        setLoginTimeout(timeout);
+      });
+
+      // Race between login and timeout
+      const result = await Promise.race([
+        signInWithPopup(auth, googleProvider),
+        timeoutPromise
+      ]);
+
+      // Clear timeout if login completed
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
+
       console.log('User signed in:', result.user.email);
       
       // Show verifying state during admin check
@@ -119,7 +148,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Clear timeout on error
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
+      
       setVerifying(false);
+      
+      // Handle timeout
+      if (error.message === 'LOGIN_TIMEOUT') {
+        console.log('Login timed out - user may have minimized the popup');
+        setError('Login timed out. Please try again and complete the sign-in process.');
+        // Don't throw - just return so UI can reset
+        return;
+      }
+      
+      // Handle popup cancellation gracefully (user closed the popup)
+      const errorCode = error?.code || '';
+      if (errorCode === 'auth/popup-closed-by-user' || 
+          errorCode === 'auth/cancelled-popup-request' ||
+          errorCode === 'auth/user-cancelled') {
+        console.log('User cancelled the login popup');
+        // Don't set error or throw - user intentionally cancelled
+        return;
+      }
+      
+      // Handle other errors
       if (!error.message?.includes('Admin verification')) {
         setError('Login failed. Please try again.');
       }
@@ -230,6 +286,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Clear token refresh interval
       if (tokenRefreshInterval) {
         clearInterval(tokenRefreshInterval);
+      }
+      
+      // Clear login timeout
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
       }
     };
   }, []);
