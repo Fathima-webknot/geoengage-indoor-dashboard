@@ -36,17 +36,6 @@ apiClient.interceptors.request.use(
       if (currentUser) {
         // Get the ID token from Firebase (force refresh if expired)
         const token = await currentUser.getIdToken(true);
-        
-        // Log token in a persistent way
-        console.group('🔑 FIREBASE TOKEN - Click to expand and copy');
-        console.warn('FULL TOKEN (copy this):', token);
-        console.log('User Email:', currentUser.email);
-        console.log('User UID:', currentUser.uid);
-        console.groupEnd();
-        
-        // Also store in window for easy access
-        (window as any).FIREBASE_TOKEN = token;
-        console.info('💡 TIP: Type "FIREBASE_TOKEN" in console to see token again');
 
         // Attach the token to the Authorization header
         if (config.headers) {
