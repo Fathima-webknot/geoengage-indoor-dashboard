@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
+import { Snackbar, Alert } from '@mui/material';
 import { auth, googleProvider } from '@/config/firebase';
 import { User, AuthContextType } from '@/types/auth.types';
 import { adminService } from '@/services/adminService';
@@ -57,14 +58,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [tokenRefreshInterval, setTokenRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [serverDownAlert, setServerDownAlert] = useState<boolean>(false);
 
   // Timeout duration for login popup (30 seconds)
   const LOGIN_TIMEOUT_MS = 30000;
 
   /**
    * Verify if user is admin
+   * Returns: { success: boolean, isBackendDown: boolean }
    */
-  const verifyAdmin = async (user: FirebaseUser, signal?: AbortSignal): Promise<boolean> => {
+  const verifyAdmin = async (user: FirebaseUser, signal?: AbortSignal): Promise<{ success: boolean; isBackendDown: boolean }> => {
     try {
       console.log('Verifying admin for user:', user.email);
       
@@ -73,24 +76,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Check if request was aborted
       if (signal?.aborted) {
         console.log('Admin verification aborted');
-        return false;
+        return { success: false, isBackendDown: false };
       }
       
       console.log('Admin verification response:', response);
       
       if (response.success) {
         setError(null);
-        return true;
+        return { success: true, isBackendDown: false };
       } else {
-        setError('Access denied. You need admin permissions to access this dashboard.');
+        setError('Access denied. You are not authorized to access this dashboard.');
         await signOut(auth);
-        return false;
+        return { success: false, isBackendDown: false };
       }
     } catch (error: any) {
       console.error('Admin verification failed:', error);
-      setError(error.response?.data?.message || 'Failed to verify admin status');
+      
+      // Check if it's a 404 Not Found error (backend service down)
+      if (error.response?.status === 404) {
+        console.error('Backend service is unavailable (404)');
+        setServerDownAlert(true);
+        // Don't sign out user - keep them logged in with Firebase
+        return { success: false, isBackendDown: true };
+      }
+      
+      // Check if no response (network error - backend might be down)
+      if (!error.response) {
+        console.error('Network error: Backend service may be down');
+        setServerDownAlert(true);
+        return { success: false, isBackendDown: true };
+      }
+      
+      // Check if it's a 403 Forbidden error (non-admin user)
+      if (error.response?.status === 403) {
+        setError('Access denied. You are not authorized to access this dashboard.');
+      } else if (error.response?.status === 401) {
+        setError('Authentication failed. Please try logging in again.');
+      } else {
+        // Other server errors
+        setError(error.response?.data?.message || 'Failed to verify admin status. Please try again.');
+      }
+      
       await signOut(auth);
-      return false;
+      return { success: false, isBackendDown: false };
     }
   };
 
@@ -139,11 +167,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setVerifying(true);
       
       // Verify admin status
-      const isAdmin = await verifyAdmin(result.user, controller.signal);
+      const adminCheck = await verifyAdmin(result.user, controller.signal);
       
       setVerifying(false);
       
-      if (!isAdmin) {
+      // If backend is down, don't throw error - just show popup
+      if (adminCheck.isBackendDown) {
+        console.log('Backend is down - keeping user logged in with Firebase');
+        return;
+      }
+      
+      if (!adminCheck.success) {
         throw new Error('Admin verification failed');
       }
     } catch (error: any) {
@@ -258,12 +292,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('Auth state changed: User logged in', firebaseUser.email);
         setFirebaseUser(firebaseUser);
         
-        const isAdmin = await verifyAdmin(firebaseUser);
-        if (isAdmin) {
+        const adminCheck = await verifyAdmin(firebaseUser);
+        if (adminCheck.success) {
           setCurrentUser(mapFirebaseUser(firebaseUser));
-        } else {
+        } else if (!adminCheck.isBackendDown) {
+          // Only clear user if it's not a backend issue
           setCurrentUser(null);
         }
+        // If backend is down, keep both firebaseUser and currentUser as-is
       } else {
         // User is signed out
         setFirebaseUser(null);
@@ -312,6 +348,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
+      
+      {/* Backend Service Down Alert */}
+      <Snackbar
+        open={serverDownAlert}
+        autoHideDuration={6000}
+        onClose={() => setServerDownAlert(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setServerDownAlert(false)}
+          severity="error"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          Backend service is down. Please try again later.
+        </Alert>
+      </Snackbar>
     </AuthContext.Provider>
   );
 };

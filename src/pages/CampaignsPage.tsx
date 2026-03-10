@@ -133,6 +133,20 @@ const CampaignsPage = () => {
     loadCampaigns();
   }, []);
 
+  // Reload campaigns when network comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('🔄 Network reconnected - refreshing campaigns...');
+      loadCampaigns();
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
+
   const handleCampaignCreated = () => {
     // Refresh campaign list after creating a new campaign
     loadCampaigns();

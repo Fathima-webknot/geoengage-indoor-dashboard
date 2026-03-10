@@ -5,8 +5,11 @@ import {
   Grid,
   Paper,
   Alert,
+  AlertTitle,
   Skeleton,
+  Button,
 } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import {
   Campaign as CampaignIcon,
   CheckCircle as ActiveIcon,
@@ -80,6 +83,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, color, bgCo
 const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState({
     totalCampaigns: 0,
     activeCampaigns: 0,
@@ -92,74 +96,91 @@ const AnalyticsPage = () => {
     ctr: 0,
   });
 
-  useEffect(() => {
-    const loadMetrics = async () => {
-      setLoading(true);
-      setLoadingTimeout(false);
+  const loadMetrics = async () => {
+    setLoading(true);
+    setLoadingTimeout(false);
+    setError(null);
+    
+    // Set timeout for loading indicator
+    const timeoutId = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 15000);
+    
+    try {
+      // Fetch campaigns
+      const campaignsResponse = await campaignService.getAllCampaigns();
+      let campaigns: any[] = [];
       
-      // Set timeout for loading indicator
-      const timeoutId = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 15000);
+      if (Array.isArray(campaignsResponse)) {
+        campaigns = campaignsResponse;
+      } else if (campaignsResponse?.campaigns) {
+        campaigns = campaignsResponse.campaigns;
+      }
+
+      // Fetch zones
+      const zonesResponse = await zoneService.getAllZones();
+      let zones: any[] = [];
       
+      if (Array.isArray(zonesResponse)) {
+        zones = zonesResponse;
+      } else if (zonesResponse?.zones) {
+        zones = zonesResponse.zones;
+      }
+
+      // Fetch notification analytics
       try {
-        // Fetch campaigns
-        const campaignsResponse = await campaignService.getAllCampaigns();
-        let campaigns: any[] = [];
-        
-        if (Array.isArray(campaignsResponse)) {
-          campaigns = campaignsResponse;
-        } else if (campaignsResponse?.campaigns) {
-          campaigns = campaignsResponse.campaigns;
-        }
-
-        // Fetch zones
-        const zonesResponse = await zoneService.getAllZones();
-        let zones: any[] = [];
-        
-        if (Array.isArray(zonesResponse)) {
-          zones = zonesResponse;
-        } else if (zonesResponse?.zones) {
-          zones = zonesResponse.zones;
-        }
-
-        // Fetch notification analytics
-        try {
-          const notificationAnalytics = await analyticsService.getNotificationAnalytics();
-          setNotificationMetrics({
-            totalTriggered: notificationAnalytics.totalTriggered || 0,
-            totalClicked: notificationAnalytics.totalClicked || 0,
-            ctr: notificationAnalytics.ctr || 0,
-          });
-        } catch (error) {
-          console.error('Failed to load notification analytics:', error);
-          // Set default values if analytics API fails
-          setNotificationMetrics({
-            totalTriggered: 0,
-            totalClicked: 0,
-            ctr: 0,
-          });
-        }
-
-        // Calculate metrics
-        const activeCampaigns = campaigns.filter(c => c.active).length;
-        const inactiveCampaigns = campaigns.filter(c => !c.active).length;
-
-        setMetrics({
-          totalCampaigns: campaigns.length,
-          activeCampaigns,
-          inactiveCampaigns,
-          totalZones: zones.length,
+        const notificationAnalytics = await analyticsService.getNotificationAnalytics();
+        setNotificationMetrics({
+          totalTriggered: notificationAnalytics.totalTriggered || 0,
+          totalClicked: notificationAnalytics.totalClicked || 0,
+          ctr: notificationAnalytics.ctr || 0,
         });
       } catch (error) {
-        console.error('Failed to load analytics metrics:', error);
-      } finally {
-        clearTimeout(timeoutId);
-        setLoading(false);
+        console.error('Failed to load notification analytics:', error);
+        // Set default values if analytics API fails
+        setNotificationMetrics({
+          totalTriggered: 0,
+          totalClicked: 0,
+          ctr: 0,
+        });
       }
+
+      // Calculate metrics
+      const activeCampaigns = campaigns.filter(c => c.active).length;
+      const inactiveCampaigns = campaigns.filter(c => !c.active).length;
+
+      setMetrics({
+        totalCampaigns: campaigns.length,
+        activeCampaigns,
+        inactiveCampaigns,
+        totalZones: zones.length,
+      });
+    } catch (error: any) {
+      console.error('Failed to load analytics metrics:', error);
+      setError('Failed to load analytics data. Please check your connection.');
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
+    }
+  };
+
+  // Load metrics on mount
+  useEffect(() => {
+    loadMetrics();
+  }, []);
+
+  // Reload metrics when network comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('🔄 Network reconnected - refreshing analytics...');
+      loadMetrics();
     };
 
-    loadMetrics();
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
   }, []);
 
   return (
@@ -168,7 +189,28 @@ const AnalyticsPage = () => {
         Analytics Dashboard
       </Typography>
 
-      {/* Loading timeout error */}
+      {/* Error Alert with Retry */}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={loadMetrics}
+            >
+              Retry
+            </Button>
+          }
+        >
+          <AlertTitle>Failed to Load Data</AlertTitle>
+          {error}
+        </Alert>
+      )}
+
+      {/* Loading timeout warning */}
       {loadingTimeout && loading && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           Loading taking longer than expected. Please check your connection.
