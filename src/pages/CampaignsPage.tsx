@@ -30,7 +30,7 @@ const CampaignsPage = () => {
     campaignId: number | null;
   }>({ open: false, campaignId: null });
 
-  const loadCampaigns = async () => {
+  const loadCampaigns = async (showSuccessMessage = false) => {
     setLoading(true);
     setLoadingTimeout(false);
     
@@ -85,6 +85,15 @@ const CampaignsPage = () => {
       });
       
       setCampaigns(sortedCampaigns);
+
+      // Show success message if requested (e.g., after reconnection)
+      if (showSuccessMessage) {
+        setSnackbar({
+          open: true,
+          message: 'Campaigns refreshed successfully',
+          severity: 'success',
+        });
+      }
     } catch (error: any) {
       console.error('❌ Failed to load campaigns:', error);
       console.error('Error details:', error.response?.data);
@@ -101,7 +110,7 @@ const CampaignsPage = () => {
       setSnackbar({
         open: true,
         message: error.response?.status === 500 
-          ? 'Backend server error. Please check if the campaigns table exists in the database.'
+          ? 'We could not load campaigns right now. Please try again in a moment.'
           : getErrorMessage(error),
         severity: 'error',
       });
@@ -118,7 +127,12 @@ const CampaignsPage = () => {
   // Reload campaigns when network comes back online
   useEffect(() => {
     const handleOnline = () => {
-      loadCampaigns();
+      setSnackbar({
+        open: true,
+        message: 'Connection restored. Refreshing campaigns...',
+        severity: 'info',
+      });
+      loadCampaigns(true);
     };
 
     window.addEventListener('online', handleOnline);
