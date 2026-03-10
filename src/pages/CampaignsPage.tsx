@@ -30,7 +30,7 @@ const CampaignsPage = () => {
     campaignId: number | null;
   }>({ open: false, campaignId: null });
 
-  const loadCampaigns = async () => {
+  const loadCampaigns = async (showSuccessMessage = false) => {
     setLoading(true);
     setLoadingTimeout(false);
     
@@ -45,9 +45,6 @@ const CampaignsPage = () => {
         campaignService.getAllCampaigns(),
         zoneService.getAllZones(),
       ]);
-      
-      console.log('📋 Campaigns API response:', campaignsResponse);
-      console.log('🗺️ Zones API response:', zonesResponse);
       
       // Backend now returns array directly
       const campaignsData = Array.isArray(campaignsResponse) ? campaignsResponse : [];
@@ -78,14 +75,6 @@ const CampaignsPage = () => {
         zone_name: zoneMap.get(campaign.zone_id) || 'Unknown Zone',
       }));
       
-      console.log('📊 Parsed campaigns:', enrichedCampaigns.map(c => ({ 
-        id: c.id, 
-        name: c.name,
-        active: c.active, 
-        trigger: c.trigger,
-        zone_name: c.zone_name 
-      })));
-      
       // Sort campaigns: Active first, then by trigger type
       const sortedCampaigns = enrichedCampaigns.sort((a, b) => {
         // Active campaigns come before inactive
@@ -95,14 +84,16 @@ const CampaignsPage = () => {
         return 0;
       });
       
-      console.log('✅ After sorting:', sortedCampaigns.map(c => ({ 
-        id: c.id, 
-        name: c.name,
-        active: c.active, 
-        trigger: c.trigger,
-        zone_name: c.zone_name 
-      })));
       setCampaigns(sortedCampaigns);
+
+      // Show success message if requested (e.g., after reconnection)
+      if (showSuccessMessage) {
+        setSnackbar({
+          open: true,
+          message: 'Campaigns refreshed successfully',
+          severity: 'success',
+        });
+      }
     } catch (error: any) {
       console.error('❌ Failed to load campaigns:', error);
       console.error('Error details:', error.response?.data);
@@ -119,7 +110,7 @@ const CampaignsPage = () => {
       setSnackbar({
         open: true,
         message: error.response?.status === 500 
-          ? 'Backend server error. Please check if the campaigns table exists in the database.'
+          ? 'We could not load campaigns right now. Please try again in a moment.'
           : getErrorMessage(error),
         severity: 'error',
       });
@@ -136,8 +127,12 @@ const CampaignsPage = () => {
   // Reload campaigns when network comes back online
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🔄 Network reconnected - refreshing campaigns...');
-      loadCampaigns();
+      setSnackbar({
+        open: true,
+        message: 'Connection restored. Refreshing campaigns...',
+        severity: 'info',
+      });
+      loadCampaigns(true);
     };
 
     window.addEventListener('online', handleOnline);
@@ -155,13 +150,7 @@ const CampaignsPage = () => {
   const handleActivate = async (id: number) => {
     setActionLoading(id);
     try {
-      console.group('🟢 ACTIVATING CAMPAIGN');
-      console.log('Campaign ID to activate:', id);
-      console.log('Current active campaigns:', campaigns.filter(c => c.active).map(c => ({ id: c.id, name: c.name, message: c.message })));
-      console.log('Total active count BEFORE:', campaigns.filter(c => c.active).length);
-      
       const result = await campaignService.activateCampaign(id);
-      console.log('✅ Backend activation response:', result);
       
       setSnackbar({
         open: true,
@@ -170,11 +159,8 @@ const CampaignsPage = () => {
       });
       
       await loadCampaigns();
-      console.log('Total active count AFTER refresh:', campaigns.filter(c => c.active).length);
-      console.groupEnd();
     } catch (error: any) {
       console.error('❌ Failed to activate campaign:', error);
-      console.groupEnd();
       setSnackbar({
         open: true,
         message: getErrorMessage(error),
@@ -188,9 +174,7 @@ const CampaignsPage = () => {
   const handleDeactivate = async (id: number) => {
     setActionLoading(id);
     try {
-      console.log('🔴 Deactivating campaign ID:', id);
       const result = await campaignService.deactivateCampaign(id);
-      console.log('✅ Deactivation response:', result);
       setSnackbar({
         open: true,
         message: getSuccessMessage('campaign-deactivated'),

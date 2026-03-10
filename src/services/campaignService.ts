@@ -22,13 +22,8 @@ export const campaignService = {
     const queryString = params.toString();
     const url = queryString ? `${CAMPAIGNS_ENDPOINT}?${queryString}` : CAMPAIGNS_ENDPOINT;
     
-    console.log('📡 Fetching campaigns from:', url);
-    console.log('🔗 Full URL:', `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}${url}`);
-    
     try {
       const response = await api.get<Campaign[]>(url);
-      console.log('✅ Campaigns response:', response);
-      console.log('📊 Campaigns data:', response.data);
       
       // Handle case where backend might return an object instead of array
       if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
@@ -87,7 +82,6 @@ export const campaignService = {
    * with the same zone_id and trigger type
    */
   async activateCampaign(id: number): Promise<Campaign> {
-    console.log(`Activating campaign ${id} - PUT ${CAMPAIGNS_ENDPOINT}/${id} with active=true`);
     const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: true });
     return response.data;
   },
@@ -96,7 +90,6 @@ export const campaignService = {
    * Deactivate a campaign
    */
   async deactivateCampaign(id: number): Promise<Campaign> {
-    console.log(`Deactivating campaign ${id} - PUT ${CAMPAIGNS_ENDPOINT}/${id} with active=false`);
     const response = await api.put<Campaign>(`${CAMPAIGNS_ENDPOINT}/${id}`, { active: false });
     return response.data;
   },

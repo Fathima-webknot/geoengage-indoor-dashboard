@@ -63,8 +63,6 @@ try {
     googleProvider.setCustomParameters({
       prompt: 'select_account', // Always show account selection
     });
-
-    console.log('✅ Firebase initialized successfully');
   } else {
     throw new Error('Firebase configuration is incomplete');
   }

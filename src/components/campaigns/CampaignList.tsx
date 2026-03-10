@@ -122,118 +122,130 @@ export const CampaignList: React.FC<CampaignListProps> = React.memo(({
               </TableRow>
             ) : (
               campaigns.map((campaign) => {
-              const isActive = campaign.active || false;
-              const status = isActive ? 'Active' : 'Inactive';
-              
-              return (
-                <TableRow
-                  key={campaign.id}
-                  sx={{
-                    transition: 'all 0.2s ease',
-                    '&:hover': { 
-                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                      transform: 'translateX(4px)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    },
-                  }}
-                >
-                  <TableCell>
-                    <Chip
-                      label={status}
-                      size="small"
-                      color={isActive ? 'success' : 'default'}
-                      sx={{ 
-                        minWidth: 70,
-                        bgcolor: isActive ? '#e8f5e9' : '#f5f5f5',
-                        color: isActive ? '#2e7d32' : '#757575',
-                        fontWeight: 500,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {campaign.name || `Campaign #${campaign.id}`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={campaign.trigger === CampaignTrigger.ZONE_ENTRY ? <EntryIcon /> : <ExitIcon />}
-                      label={getTriggerLabel(campaign.trigger)}
-                      size="small"
-                      color={getTriggerColor(campaign.trigger)}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {campaign.zone_name || 'N/A'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
-                      {campaign.message || 'No message'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                      {isActive ? (
-                        <Tooltip title="Deactivate Campaign">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => onDeactivate && onDeactivate(campaign.id)}
-                              disabled={actionLoading === campaign.id}
-                              sx={{ 
-                                color: actionLoading === campaign.id ? '#ccc' : '#f57c00',
-                              }}
-                            >
-                              {actionLoading === campaign.id ? (
-                                <CircularProgress size={20} />
-                              ) : (
-                                <DeactivateIcon fontSize="small" />
-                              )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Activate Campaign">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => onActivate && onActivate(campaign.id)}
-                              disabled={actionLoading === campaign.id}
-                              sx={{ 
-                                color: actionLoading === campaign.id ? '#ccc' : '#4caf50',
-                              }}
-                            >
-                              {actionLoading === campaign.id ? (
-                                <CircularProgress size={20} />
-                              ) : (
-                                <ActivateIcon fontSize="small" />
-                              )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      )}
-                      <Tooltip title="Delete Campaign">
-                        <span>
-                          <IconButton
-                            size="small"
-                            onClick={() => onDelete && onDelete(campaign.id)}
-                            disabled={actionLoading === campaign.id}
-                            sx={{ 
-                              color: actionLoading === campaign.id ? '#ccc' : '#d32f2f',
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </span>
+                const isActive = campaign.active || false;
+                const status = isActive ? 'Active' : 'Inactive';
+
+                return (
+                  <TableRow
+                    key={campaign.id}
+                    sx={{
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                        transform: 'translateX(4px)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Chip
+                        label={status}
+                        size="small"
+                        color={isActive ? 'success' : 'default'}
+                        sx={{
+                          minWidth: 70,
+                          bgcolor: isActive ? '#e8f5e9' : '#f5f5f5',
+                          color: isActive ? '#2e7d32' : '#757575',
+                          fontWeight: 500,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {campaign.name || `Campaign #${campaign.id}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={campaign.trigger === CampaignTrigger.ZONE_ENTRY ? <EntryIcon /> : <ExitIcon />}
+                        label={getTriggerLabel(campaign.trigger)}
+                        size="small"
+                        color={getTriggerColor(campaign.trigger)}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {campaign.zone_name || 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 280, overflow: 'hidden' }}>
+                      <Tooltip title={campaign.message || ''} placement="top" arrow>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            maxWidth: 280,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                          }}
+                        >
+                          {campaign.message || 'No message'}
+                        </Typography>
                       </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              );
-            })
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                        {isActive ? (
+                          <Tooltip title="Deactivate Campaign">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onDeactivate && onDeactivate(campaign.id)}
+                                disabled={actionLoading === campaign.id}
+                                sx={{
+                                  color: actionLoading === campaign.id ? '#ccc' : '#f57c00',
+                                }}
+                              >
+                                {actionLoading === campaign.id ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <DeactivateIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Activate Campaign">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onActivate && onActivate(campaign.id)}
+                                disabled={actionLoading === campaign.id}
+                                sx={{
+                                  color: actionLoading === campaign.id ? '#ccc' : '#4caf50',
+                                }}
+                              >
+                                {actionLoading === campaign.id ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <ActivateIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Delete Campaign">
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => onDelete && onDelete(campaign.id)}
+                              disabled={actionLoading === campaign.id}
+                              sx={{
+                                color: actionLoading === campaign.id ? '#ccc' : '#d32f2f',
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

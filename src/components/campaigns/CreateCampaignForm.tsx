@@ -17,6 +17,7 @@ import { CampaignTrigger } from '@/types/campaign.types';
 import { Zone } from '@/types/zone.types';
 import { campaignService } from '@/services/campaignService';
 import { zoneService } from '@/services/zoneService';
+import { getErrorMessage } from '@/utils/errorMessages';
 
 interface CreateCampaignFormProps {
   onSuccess?: () => void;
@@ -27,6 +28,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   const [loading, setLoading] = useState(false);
   const [zonesLoading, setZonesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isZoneLoadError, setIsZoneLoadError] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const [campaignName, setCampaignName] = useState('');
@@ -49,6 +51,68 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
   // Constants for validation
   const MIN_MESSAGE_LENGTH = 10;
   const MAX_MESSAGE_LENGTH = 200;
+
+  const getZonesLoadErrorMessage = (err: any): string => {
+    if (!navigator.onLine) {
+      return 'You are offline. Reconnect to the internet and try again.';
+    }
+
+    const status = err?.response?.status;
+    const message = String(err?.message || '').toLowerCase();
+
+    if (status === 500 || status === 502 || status === 503 || status === 504) {
+      return 'We could not load available zones right now because the service is temporarily unavailable. Please try again shortly.';
+    }
+
+    if (
+      message.includes('enotfound')
+      || message.includes('econnrefused')
+      || message.includes('network error')
+      || message.includes('failed to fetch')
+    ) {
+      return 'We could not connect to the zone service. Please check your internet or backend connection and try again.';
+    }
+
+    return 'We could not load zones right now. Please try again.';
+  };
+
+  // Load zones function (extracted so it can be called on reconnection)
+  const loadZones = async (clearError = false) => {
+    try {
+      setZonesLoading(true);
+      if (clearError) {
+        setError(null);
+      }
+      const response = await zoneService.getAllZones();
+
+      // Handle different response formats
+      let zonesData: Zone[] = [];
+      if (Array.isArray(response)) {
+        // Backend returns array directly
+        zonesData = response;
+      } else if (response && Array.isArray(response.zones)) {
+        // Backend returns { zones: [...] }
+        zonesData = response.zones;
+      } else if (response && Array.isArray((response as any).data)) {
+        // Backend returns { data: [...] }
+        zonesData = (response as any).data;
+      }
+
+      setZones(zonesData);
+      setIsZoneLoadError(false);
+      // Clear error if zones loaded successfully
+      if (clearError && zonesData.length > 0) {
+        setError(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to load zones - Full error:', err);
+      console.error('Error response:', err.response);
+      setIsZoneLoadError(true);
+      setError(getZonesLoadErrorMessage(err));
+    } finally {
+      setZonesLoading(false);
+    }
+  };
 
   // Validation function
   const validateForm = () => {
@@ -88,42 +152,28 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
   // Load zones on component mount
   useEffect(() => {
-    const loadZones = async () => {
-      try {
-        setZonesLoading(true);
-        console.log('Fetching zones from API...');
-        const response = await zoneService.getAllZones();
-        console.log('Zones API response:', response);
-        
-        // Handle different response formats
-        let zonesData: Zone[] = [];
-        if (Array.isArray(response)) {
-          // Backend returns array directly
-          zonesData = response;
-        } else if (response && Array.isArray(response.zones)) {
-          // Backend returns { zones: [...] }
-          zonesData = response.zones;
-        } else if (response && Array.isArray((response as any).data)) {
-          // Backend returns { data: [...] }
-          zonesData = (response as any).data;
-        }
-        
-        console.log('Parsed zones array:', zonesData);
-        setZones(zonesData);
-      } catch (err: any) {
-        console.error('Failed to load zones - Full error:', err);
-        console.error('Error response:', err.response);
-        setError(`Failed to load zones: ${err.response?.status || ''} ${err.response?.data?.message || err.message}`);
-      } finally {
-        setZonesLoading(false);
-      }
-    };
     loadZones();
   }, []);
 
+  // Reload zones when network comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      // If there's an error and no zones loaded, retry
+      if (isZoneLoadError || zones.length === 0) {
+        loadZones(true);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [isZoneLoadError, zones.length]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched
     setTouched({
       campaignName: true,
@@ -133,11 +183,13 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
     // Validate form
     if (!validateForm()) {
+      setIsZoneLoadError(false);
       setError('Please fix the validation errors before submitting');
       return;
     }
 
     setLoading(true);
+    setIsZoneLoadError(false);
     setError(null);
     setSuccess(false);
 
@@ -150,13 +202,9 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         name: campaignName.trim(),
       };
 
-      console.group('📤 Creating Campaign');
-      console.log('Payload:', payload);
-      console.groupEnd();
-
       await campaignService.createCampaign(payload);
       setSuccess(true);
-      
+
       // Reset form after a delay to show success message
       setTimeout(() => {
         setCampaignName('');
@@ -166,26 +214,16 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         setTouched({});
         setErrors({});
         setSuccess(false);
-        
+
         if (onSuccess) {
           onSuccess();
         }
       }, 2000); // Show success message for 2 seconds
     } catch (err: any) {
-      console.group('❌ Campaign Creation Error');
       console.error('Full error:', err);
       console.error('Response data:', err.response?.data);
       console.error('Response status:', err.response?.status);
-      console.groupEnd();
-      
-      // Extract detailed error message
-      const errorMsg = err.response?.data?.message 
-        || err.response?.data?.error
-        || (typeof err.response?.data === 'string' ? err.response?.data : null)
-        || err.message 
-        || 'Failed to create campaign';
-      
-      setError(errorMsg);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -198,7 +236,19 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => {
+            setError(null);
+            setIsZoneLoadError(false);
+          }}
+          action={isZoneLoadError ? (
+            <Button color="inherit" size="small" onClick={() => loadZones(true)} disabled={zonesLoading}>
+              {zonesLoading ? 'Retrying...' : 'Retry'}
+            </Button>
+          ) : undefined}
+        >
           {error}
         </Alert>
       )}
@@ -267,8 +317,8 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                 </MenuItem>
               </Select>
               <FormHelperText>
-                {triggerType === CampaignTrigger.ZONE_ENTRY 
-                  ? 'Campaign triggers when user enters the zone' 
+                {triggerType === CampaignTrigger.ZONE_ENTRY
+                  ? 'Campaign triggers when user enters the zone'
                   : 'Campaign triggers when user exits the zone'}
               </FormHelperText>
             </FormControl>
@@ -279,25 +329,34 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             required
             fullWidth
             multiline
-            rows={4}
+            minRows={4}
+            maxRows={8}
             label="Notification Message"
             value={notificationMessage}
             onChange={(e) => setNotificationMessage(e.target.value)}
             onBlur={() => setTouched({ ...touched, notificationMessage: true })}
             placeholder="Enter the push notification text..."
             error={touched.notificationMessage && !!errors.notificationMessage}
-            inputProps={{ maxLength: MAX_MESSAGE_LENGTH }}
+            inputProps={{
+              maxLength: MAX_MESSAGE_LENGTH,
+              style: {
+                wordBreak: 'break-all',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+              },
+            }}
             helperText={
               touched.notificationMessage && errors.notificationMessage
                 ? errors.notificationMessage
                 : `${notificationMessage.length}/${MAX_MESSAGE_LENGTH} characters${notificationMessage.length < MIN_MESSAGE_LENGTH ? ` (minimum ${MIN_MESSAGE_LENGTH})` : ''}`
             }
             FormHelperTextProps={{
-              sx: { 
+              sx: {
                 mx: 0,
                 mt: 0.5,
                 wordBreak: 'break-word',
-                whiteSpace: 'normal'
+                whiteSpace: 'normal',
+                display: 'block',
               }
             }}
           />

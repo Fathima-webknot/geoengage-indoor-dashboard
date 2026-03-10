@@ -8,6 +8,7 @@ import {
   AlertTitle,
   Skeleton,
   Button,
+  Snackbar,
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 import {
@@ -84,6 +85,15 @@ const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   const [metrics, setMetrics] = useState({
     totalCampaigns: 0,
     activeCampaigns: 0,
@@ -96,7 +106,7 @@ const AnalyticsPage = () => {
     ctr: 0,
   });
 
-  const loadMetrics = async () => {
+  const loadMetrics = async (showSuccessMessage = false) => {
     setLoading(true);
     setLoadingTimeout(false);
     setError(null);
@@ -155,6 +165,15 @@ const AnalyticsPage = () => {
         inactiveCampaigns,
         totalZones: zones.length,
       });
+
+      // Show success message if requested (e.g., after reconnection)
+      if (showSuccessMessage) {
+        setSnackbar({
+          open: true,
+          message: 'Analytics data refreshed successfully',
+          severity: 'success',
+        });
+      }
     } catch (error: any) {
       console.error('Failed to load analytics metrics:', error);
       setError('Failed to load analytics data. Please check your connection.');
@@ -172,8 +191,12 @@ const AnalyticsPage = () => {
   // Reload metrics when network comes back online
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🔄 Network reconnected - refreshing analytics...');
-      loadMetrics();
+      setSnackbar({
+        open: true,
+        message: 'Connection restored. Refreshing analytics data...',
+        severity: 'info',
+      });
+      loadMetrics(true);
     };
 
     window.addEventListener('online', handleOnline);
@@ -188,6 +211,23 @@ const AnalyticsPage = () => {
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
         Analytics Dashboard
       </Typography>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* Error Alert with Retry */}
       {error && (

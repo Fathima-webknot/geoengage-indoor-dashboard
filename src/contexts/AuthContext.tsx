@@ -69,17 +69,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    */
   const verifyAdmin = async (user: FirebaseUser, signal?: AbortSignal): Promise<{ success: boolean; isBackendDown: boolean }> => {
     try {
-      console.log('Verifying admin for user:', user.email);
-      
       const response = await adminService.verifyAdmin();
       
       // Check if request was aborted
       if (signal?.aborted) {
-        console.log('Admin verification aborted');
         return { success: false, isBackendDown: false };
       }
-      
-      console.log('Admin verification response:', response);
       
       if (response.success) {
         setError(null);
@@ -161,8 +156,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setLoginTimeout(null);
       }
 
-      console.log('User signed in:', result.user.email);
-      
       // Show verifying state during admin check
       setVerifying(true);
       
@@ -173,7 +166,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // If backend is down, don't throw error - just show popup
       if (adminCheck.isBackendDown) {
-        console.log('Backend is down - keeping user logged in with Firebase');
         return;
       }
       
@@ -193,7 +185,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Handle timeout
       if (error.message === 'LOGIN_TIMEOUT') {
-        console.log('Login timed out - user may have minimized the popup');
         setError('Login timed out. Please try again and complete the sign-in process.');
         // Don't throw - just return so UI can reset
         return;
@@ -204,7 +195,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (errorCode === 'auth/popup-closed-by-user' || 
           errorCode === 'auth/cancelled-popup-request' ||
           errorCode === 'auth/user-cancelled') {
-        console.log('User cancelled the login popup');
         // Don't set error or throw - user intentionally cancelled
         return;
       }
@@ -224,7 +214,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await signOut(auth);
       setError(null);
-      console.log('User signed out');
     } catch (error: any) {
       console.error('Logout error:', error);
       // Set error state instead of throwing to provide user feedback
@@ -256,9 +245,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Refresh token every 55 minutes (5 minutes before expiry)
       const interval = setInterval(async () => {
         try {
-          console.log('🔄 Auto-refreshing Firebase token...');
           await firebaseUser.getIdToken(true);
-          console.log('✅ Token refreshed successfully');
         } catch (error) {
           console.error('❌ Token refresh failed:', error);
         }
@@ -289,7 +276,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in - verify admin status
-        console.log('Auth state changed: User logged in', firebaseUser.email);
         setFirebaseUser(firebaseUser);
         
         const adminCheck = await verifyAdmin(firebaseUser);
@@ -304,7 +290,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // User is signed out
         setFirebaseUser(null);
         setCurrentUser(null);
-        console.log('Auth state changed: User logged out');
       }
       setLoading(false);
     });
@@ -315,7 +300,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Cancel any pending API requests
       if (abortController) {
-        console.log('Aborting pending auth requests on unmount');
         abortController.abort();
       }
       
