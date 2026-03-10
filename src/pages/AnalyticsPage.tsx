@@ -172,7 +172,6 @@ const AnalyticsPage = () => {
   // Reload metrics when network comes back online
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🔄 Network reconnected - refreshing analytics...');
       loadMetrics();
     };
 

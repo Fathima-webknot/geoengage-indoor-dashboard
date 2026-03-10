@@ -91,10 +91,8 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     const loadZones = async () => {
       try {
         setZonesLoading(true);
-        console.log('Fetching zones from API...');
         const response = await zoneService.getAllZones();
-        console.log('Zones API response:', response);
-        
+
         // Handle different response formats
         let zonesData: Zone[] = [];
         if (Array.isArray(response)) {
@@ -107,8 +105,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
           // Backend returns { data: [...] }
           zonesData = (response as any).data;
         }
-        
-        console.log('Parsed zones array:', zonesData);
+
         setZones(zonesData);
       } catch (err: any) {
         console.error('Failed to load zones - Full error:', err);
@@ -123,7 +120,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched
     setTouched({
       campaignName: true,
@@ -150,13 +147,9 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         name: campaignName.trim(),
       };
 
-      console.group('📤 Creating Campaign');
-      console.log('Payload:', payload);
-      console.groupEnd();
-
       await campaignService.createCampaign(payload);
       setSuccess(true);
-      
+
       // Reset form after a delay to show success message
       setTimeout(() => {
         setCampaignName('');
@@ -166,25 +159,23 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         setTouched({});
         setErrors({});
         setSuccess(false);
-        
+
         if (onSuccess) {
           onSuccess();
         }
       }, 2000); // Show success message for 2 seconds
     } catch (err: any) {
-      console.group('❌ Campaign Creation Error');
       console.error('Full error:', err);
       console.error('Response data:', err.response?.data);
       console.error('Response status:', err.response?.status);
-      console.groupEnd();
-      
+
       // Extract detailed error message
-      const errorMsg = err.response?.data?.message 
+      const errorMsg = err.response?.data?.message
         || err.response?.data?.error
         || (typeof err.response?.data === 'string' ? err.response?.data : null)
-        || err.message 
+        || err.message
         || 'Failed to create campaign';
-      
+
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -267,8 +258,8 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                 </MenuItem>
               </Select>
               <FormHelperText>
-                {triggerType === CampaignTrigger.ZONE_ENTRY 
-                  ? 'Campaign triggers when user enters the zone' 
+                {triggerType === CampaignTrigger.ZONE_ENTRY
+                  ? 'Campaign triggers when user enters the zone'
                   : 'Campaign triggers when user exits the zone'}
               </FormHelperText>
             </FormControl>
@@ -279,25 +270,34 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             required
             fullWidth
             multiline
-            rows={4}
+            minRows={4}
+            maxRows={8}
             label="Notification Message"
             value={notificationMessage}
             onChange={(e) => setNotificationMessage(e.target.value)}
             onBlur={() => setTouched({ ...touched, notificationMessage: true })}
             placeholder="Enter the push notification text..."
             error={touched.notificationMessage && !!errors.notificationMessage}
-            inputProps={{ maxLength: MAX_MESSAGE_LENGTH }}
+            inputProps={{
+              maxLength: MAX_MESSAGE_LENGTH,
+              style: {
+                wordBreak: 'break-all',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+              },
+            }}
             helperText={
               touched.notificationMessage && errors.notificationMessage
                 ? errors.notificationMessage
                 : `${notificationMessage.length}/${MAX_MESSAGE_LENGTH} characters${notificationMessage.length < MIN_MESSAGE_LENGTH ? ` (minimum ${MIN_MESSAGE_LENGTH})` : ''}`
             }
             FormHelperTextProps={{
-              sx: { 
+              sx: {
                 mx: 0,
                 mt: 0.5,
                 wordBreak: 'break-word',
-                whiteSpace: 'normal'
+                whiteSpace: 'normal',
+                display: 'block',
               }
             }}
           />

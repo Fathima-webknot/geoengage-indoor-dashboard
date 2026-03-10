@@ -17,7 +17,6 @@ const OfflineBanner = () => {
      * Handle online event
      */
     const handleOnline = () => {
-      console.log('✅ Network connection restored');
       setIsOnline(true);
       setShowOfflineBanner(false);
       setShowOnlineBanner(true);
@@ -32,7 +31,6 @@ const OfflineBanner = () => {
      * Handle offline event
      */
     const handleOffline = () => {
-      console.warn('⚠️ Network connection lost');
       setIsOnline(false);
       setShowOfflineBanner(true);
       setShowOnlineBanner(false);
