@@ -176,7 +176,7 @@ const AnalyticsPage = () => {
       }
     } catch (error: any) {
       console.error('Failed to load analytics metrics:', error);
-      setError('Failed to load analytics data. Please check your connection.');
+      setError('Failed to load analytics data. Try again in sometime');
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);

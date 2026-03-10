@@ -20,6 +20,7 @@ Welcome to the comprehensive documentation for the GeoEngage Admin Web Dashboard
 | [**07-FLOWCHARTS.md**](./07-FLOWCHARTS.md) | Visual flowcharts (technical & layman) | Visual learners, presentations |
 | [**08-DATA-MODELS.md**](./08-DATA-MODELS.md) | TypeScript types, database schemas | Understanding data structures |
 | [**09-QUICK-REFERENCE.md**](./09-QUICK-REFERENCE.md) | Cheat sheet, code snippets, debugging tips | Daily development, quick lookups |
+| [**10-FRONTEND-TECHNICAL-DOCUMENTATION.md**](./10-FRONTEND-TECHNICAL-DOCUMENTATION.md) | Consolidated frontend technical spec (single shareable doc) | Stakeholder reviews, handoffs, audits |
 
 ---
 
