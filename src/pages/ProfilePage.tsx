@@ -46,6 +46,8 @@ const ProfilePage = () => {
     );
   }
 
+  const profileInitial = currentUser.email?.trim().charAt(0).toUpperCase() || 'A';
+
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
       {/* Page Header */}
@@ -86,11 +88,9 @@ const ProfilePage = () => {
                   borderColor: 'primary.main',
                 }}
               >
-                {!currentUser?.photoURL && (
-                  <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
-                    {currentUser?.displayName?.[0] ?? currentUser?.email?.[0]?.toUpperCase() ?? 'A'}
-                  </Typography>
-                )}
+                <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
+                  {profileInitial}
+                </Typography>
               </Avatar>
             </Grid>
             <Grid size={{ xs: 12 }}>

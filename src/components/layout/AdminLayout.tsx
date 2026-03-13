@@ -5,6 +5,7 @@ import {
   Drawer,
   AppBar,
   Toolbar,
+  Avatar,
   List,
   ListItem,
   ListItemButton,
@@ -44,6 +45,7 @@ export const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const profileInitial = currentUser?.email?.trim().charAt(0).toUpperCase() || 'U';
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -287,17 +289,20 @@ export const AdminLayout: React.FC = () => {
               >
                 {currentUser?.displayName || currentUser?.email}
               </Typography>
-              <img
-                src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.displayName || currentUser?.email || 'U')}&background=2196f3&color=fff&size=36&bold=true&length=1`}
+              <Avatar
+                src={currentUser?.photoURL ?? undefined}
                 alt={currentUser?.displayName || 'Profile'}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  display: 'block',
+                sx={{
+                  width: 36,
+                  height: 36,
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  bgcolor: '#2196f3',
+                  color: '#ffffff',
                 }}
-              />
+              >
+                {profileInitial}
+              </Avatar>
             </Box>
           </Toolbar>
         </AppBar>
